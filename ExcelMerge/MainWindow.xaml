@@ -3,10 +3,64 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:local="clr-namespace:ExcelMerge"
         mc:Ignorable="d"
         Title="MainWindow" Height="350" Width="525">
     <Grid>
-        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="68"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Row="0" Grid.Column="0" Background="LightCoral"  Grid.ColumnSpan="2" />
+
+        <Grid Grid.Row="0" Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="80"/>
+            </Grid.ColumnDefinitions>
+
+            <Label Name="SrcFilePath" Grid.Row="0" Grid.Column="0">c:/dir/to/path.xls</Label>
+            <ComboBox Name="SrcFileSheetsCombo" Grid.Row="0" Grid.Column="1" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="SrcFileSheetsCombo_SelectionChanged"></ComboBox>
+        </Grid>
+
+        <Grid Grid.Row="0" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="80"/>
+            </Grid.ColumnDefinitions>
+
+            <Label Name="DstFilePath" Grid.Row="0" Grid.Column="0">c:/dir/to/path.xls</Label>
+            <ComboBox Name="DstFileSheetsCombo" Grid.Row="0" Grid.Column="1" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="DstFileSheetsCombo_SelectionChanged"></ComboBox>
+        </Grid>
+
+        <Border Grid.Row="1" Grid.Column="0" Background="LightYellow" />
+        <Border Grid.Row="1" Grid.Column="1" Background="LightGreen"  />
+        <local:ExcelGridControl x:Name="SrcDataGrid" Grid.Column="0" Grid.Row="1" Margin="1,0,1,1"
+            AllowDrop="True"
+            Tag="src">
+
+        </local:ExcelGridControl>
+
+        <local:ExcelGridControl x:Name="DstDataGrid" Grid.Column="1" Grid.Row="1" Margin="1,0,1,1"
+            AllowDrop="True"
+            Tag="dst">
+
+        </local:ExcelGridControl>
+
+        <GridSplitter Grid.Row="1" Grid.Column="0" Background="Transparent" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5"/>
     </Grid>
 </Window>
