@@ -59,6 +59,14 @@
       <HintPath>..\packages\NPOI.2.3.0\lib\net40\NPOI.OpenXmlFormats.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="SharpSvn, Version=1.9007.3987.251, Culture=neutral, PublicKeyToken=d729672594885a28, processorArchitecture=x86">
+      <HintPath>..\packages\SharpSvn.1.9-x86.1.9007.3987.251\lib\net40\SharpSvn.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="SharpSvn.UI, Version=1.9007.3987.251, Culture=neutral, PublicKeyToken=33789aa53ca44aa9, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpSvn.1.9-x86.1.9007.3987.251\lib\net40\SharpSvn.UI.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -117,6 +125,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

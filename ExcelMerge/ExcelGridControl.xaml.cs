@@ -23,6 +23,7 @@ namespace ExcelMerge {
     public partial class ExcelGridControl : UserControl {
         public class ExcelData :DynamicObject {
             public Dictionary<string, string> data = new Dictionary<string, string>();
+            public int idx;
 
             public override bool TryGetMember(GetMemberBinder binder, out object result) {
                 string ret = null;
@@ -48,6 +49,10 @@ namespace ExcelMerge {
             var data = new ObservableCollection<ExcelData>();
 
             ExcelGrid.DataContext = data;
+        }
+
+        public void RefreshView() {
+            ExcelGrid.Items.Refresh();
         }
 
         private void selectionCommandClick(object sender, RoutedEventArgs e) {
@@ -91,6 +96,17 @@ namespace ExcelMerge {
             return str.Replace('(', '-').Replace(')', '-');
         }
 
+        DependencyProperty GetDependencyPropertyByName(Type dependencyObjectType, string dpName) {
+            DependencyProperty dp = null;
+
+            var fieldInfo = dependencyObjectType.GetField(dpName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.FlattenHierarchy);
+            if (fieldInfo != null) {
+                dp = fieldInfo.GetValue(null) as DependencyProperty;
+            }
+
+            return dp;
+        }
+
         public void RefreshData() {
             var wrap = MainWindow.instance.books[Tag as string];
             var wb = wrap.book;
@@ -105,8 +121,20 @@ namespace ExcelMerge {
                 var column = new DataGridTextColumn();
                 var str = GetCellValue(cell);
 
-                column.Binding = new Binding(str);
+                column.Binding = new Binding(str);// { Converter = new ConvertToBackground() };
                 column.Header = str;
+
+                Style aStyle = new Style(typeof(TextBlock));
+                //var abinding = new MultiBinding() { Converter = new ConvertToBackground() };
+                //abinding.Bindings.Add(new Binding(str) { ConverterParameter = "test" });
+                //abinding.Bindings.Add(new Binding() { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor) });
+                //abinding.Bindings.Add(new Binding());
+                var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = str };
+
+                //abinding.RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor);
+                aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
+
+                column.ElementStyle = aStyle;
 
                 columns.Add(column);
 
@@ -119,6 +147,7 @@ namespace ExcelMerge {
             while (ER.MoveNext()) {
                 var row = (IRow)ER.Current;
                 var data = new ExcelData();
+                data.idx = row.RowNum;
                 for (int i = 0; i < row.Cells.Count; ++i) {
                     var cell = row.Cells[i];
                     data.data[headerStr[i]] = GetCellValue(cell);
@@ -128,11 +157,11 @@ namespace ExcelMerge {
             ExcelGrid.DataContext = datas;
         }
 
-        public void HandleFileOpen(string file) {
+        public void HandleFileOpen(string file, FileOpenType type) {
             var wb = WorkbookFactory.Create(file);
             
             if (wb!=null)
-                MainWindow.instance.OnFileLoaded(file, Tag as string);
+                MainWindow.instance.OnFileLoaded(file, Tag as string, type);
         }
 
         private void ExcelGrid_Drop(object sender, DragEventArgs e) {
@@ -140,7 +169,7 @@ namespace ExcelMerge {
                 var files = e.Data.GetData(DataFormats.FileDrop) as string[];
 
                 if (files != null && files.Any()) {
-                    HandleFileOpen(files[0]);
+                    HandleFileOpen(files[0], FileOpenType.Drag);
                 }
             }
         }
@@ -148,6 +177,28 @@ namespace ExcelMerge {
         private void ExcelGrid_LoadingRow(object sender, DataGridRowEventArgs e) {
             var row = e.Row;
             var item = row.Item;
+        }
+    }
+
+    class ConvertToBackground : IValueConverter {
+
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+            string input = value as string;
+            switch (input) {
+                case "New":
+                    return Brushes.LightGreen;
+                case "Changed":
+                    return Brushes.Yellow;
+                case "Not Found":
+                    return Brushes.Tomato;
+                default:
+                    return DependencyProperty.UnsetValue;
+            }
+
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+            throw new NotImplementedException();
         }
     }
 }

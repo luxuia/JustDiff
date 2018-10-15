@@ -9,7 +9,7 @@
         Title="MainWindow" Height="350" Width="525">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="68"/>
+            <RowDefinition Height="78"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -19,19 +19,25 @@
 
         <Border Grid.Row="0" Grid.Column="0" Background="LightCoral"  Grid.ColumnSpan="2" />
 
-        <Grid Grid.Row="0" Grid.Column="0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="25"/>
-                <RowDefinition/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition />
-                <ColumnDefinition Width="80"/>
-            </Grid.ColumnDefinitions>
-
-            <Label Name="SrcFilePath" Grid.Row="0" Grid.Column="0">c:/dir/to/path.xls</Label>
-            <ComboBox Name="SrcFileSheetsCombo" Grid.Row="0" Grid.Column="1" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="SrcFileSheetsCombo_SelectionChanged"></ComboBox>
-        </Grid>
+        <StackPanel Grid.Row="0" Grid.Column="0">
+            <StackPanel Orientation="Horizontal">
+                <Label Name="SrcFilePath" >c:/dir/to/path.xls</Label>
+                <ComboBox Name="SrcFileSheetsCombo" Width="80" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="SrcFileSheetsCombo_SelectionChanged"></ComboBox>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal">
+                <Label>
+                    SVN:
+                </Label>
+                <RadioButton GroupName="SVN" Content="Diff" Margin="5" IsChecked="True"/>
+                <RadioButton GroupName="SVN" Content="Merge" Margin="5"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Revision:"/>
+                <TextBox Name="SVNVerson" Width="100" Height="20" HorizontalContentAlignment="Right"/>
+                <Label Content="Select:"/>
+                <ComboBox Name="SVNRevisionCombo" Width="50" DisplayMemberPath="Revision" SelectedValuePath="ID" SelectionChanged="SVNResivionionList_SelectionChanged"/>
+            </StackPanel>
+        </StackPanel>
 
         <Grid Grid.Row="0" Grid.Column="1">
             <Grid.RowDefinitions>
