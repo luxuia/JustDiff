@@ -15,6 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using NPOI.SS.UserModel;
 using System.Dynamic;
+using NetDiff;
 
 namespace ExcelMerge {
     /// <summary>
@@ -24,6 +25,10 @@ namespace ExcelMerge {
         public class ExcelData :DynamicObject {
             public Dictionary<string, string> data = new Dictionary<string, string>();
             public int idx;
+            public string tag;
+
+            public List<DiffResult<string>> diffstatus;
+            public Dictionary<int, int> RowID2DiffMap;
 
             public override bool TryGetMember(GetMemberBinder binder, out object result) {
                 string ret = null;
@@ -71,30 +76,6 @@ namespace ExcelMerge {
 
         }
 
-        string GetCellValue(ICell cell) {
-            var str = string.Empty;
-            switch (cell.CellType) {
-                case CellType.Blank:
-                    str = cell.StringCellValue;
-                    break;
-                case CellType.Boolean:
-                    str = cell.BooleanCellValue.ToString();
-                    break;
-                case CellType.Error:
-                    str = cell.ErrorCellValue.ToString();
-                    break;
-                case CellType.Formula:
-                    str = cell.CellFormula;
-                    break;
-                case CellType.Numeric:
-                    str = cell.NumericCellValue.ToString();
-                    break;
-                case CellType.String:
-                    str = cell.RichStringCellValue.ToString();
-                    break;
-            }
-            return str.Replace('(', '-').Replace(')', '-');
-        }
 
         DependencyProperty GetDependencyPropertyByName(Type dependencyObjectType, string dpName) {
             DependencyProperty dp = null;
@@ -107,19 +88,25 @@ namespace ExcelMerge {
             return dp;
         }
 
+        public class ConverterParamter {
+            public int columnID;
+            public string coloumnName;
+        }
         public void RefreshData() {
-            var wrap = MainWindow.instance.books[Tag as string];
+            var tag = Tag as string;
+            var wrap = MainWindow.instance.books[tag];
             var wb = wrap.book;
             var sheet = wb.GetSheetAt(wrap.sheet);
 
             ExcelGrid.Columns.Clear();
             var columns = ExcelGrid.Columns;
             var header = sheet.GetRow(2);
+            // header不会空
             var headerStr = new string[header.Cells.Count];
             for (int i = 0; i < header.Cells.Count; ++i) {
                 var cell = header.Cells[i];
                 var column = new DataGridTextColumn();
-                var str = GetCellValue(cell);
+                var str = Util.GetCellValue(cell);
 
                 column.Binding = new Binding(str);// { Converter = new ConvertToBackground() };
                 column.Header = str;
@@ -129,7 +116,7 @@ namespace ExcelMerge {
                 //abinding.Bindings.Add(new Binding(str) { ConverterParameter = "test" });
                 //abinding.Bindings.Add(new Binding() { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor) });
                 //abinding.Bindings.Add(new Binding());
-                var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = str };
+                var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = i, coloumnName = str } };
 
                 //abinding.RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor);
                 aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
@@ -143,16 +130,39 @@ namespace ExcelMerge {
 
             var datas = new ObservableCollection<ExcelData>();
 
-            var ER = sheet.GetRowEnumerator();
-            while (ER.MoveNext()) {
-                var row = (IRow)ER.Current;
-                var data = new ExcelData();
-                data.idx = row.RowNum;
-                for (int i = 0; i < row.Cells.Count; ++i) {
-                    var cell = row.Cells[i];
-                    data.data[headerStr[i]] = GetCellValue(cell);
+            if (MainWindow.instance.diffSheetName != null) {
+                int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => tag == "src" ? a.Obj1.ID == wrap.sheet : a.Obj2.ID == wrap.sheet);
+
+                var status = MainWindow.instance.sheetsDiff[sheetDiffidx];
+
+                for (int j = 0; ; j++) {
+                    var row = sheet.GetRow(j);
+                    if (row == null) break;
+
+                    var data = new ExcelData();
+                    data.idx = row.RowNum;
+                    data.tag = Tag as string;
+
+                    if (tag == "src") {
+                        data.RowID2DiffMap = status.rowID2DiffMap1;
+                    }
+                    else {
+                        data.RowID2DiffMap = status.rowID2DiffMap2;
+                    }
+
+                    if (j < 3)
+                        data.diffstatus = status.diffHead;
+                    else {
+
+                        data.diffstatus = status.diffSheet[data.RowID2DiffMap[j]];
+                    }
+
+                    for (int i = 0; i < status.columnCount; ++i) {
+                        var cell = row.GetCell(i);
+                        data.data[headerStr[i]] = Util.GetCellValue(cell);
+                    }
+                    datas.Add(data);
                 }
-                datas.Add(data);
             }
             ExcelGrid.DataContext = datas;
         }
@@ -178,23 +188,39 @@ namespace ExcelMerge {
             var row = e.Row;
             var item = row.Item;
         }
+
+        private void ExcelGrid_ScrollChanged(object sender, ScrollChangedEventArgs e) {
+            var tag = sender;
+
+            MainWindow.instance.OnGridScrollChanged(Tag as string, e);
+        }
     }
 
     class ConvertToBackground : IValueConverter {
 
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-            string input = value as string;
-            switch (input) {
-                case "New":
-                    return Brushes.LightGreen;
-                case "Changed":
-                    return Brushes.Yellow;
-                case "Not Found":
-                    return Brushes.Tomato;
-                default:
-                    return DependencyProperty.UnsetValue;
-            }
+            var param = (ExcelGridControl.ConverterParamter)parameter;
+            if (value is ExcelGridControl.ExcelData) {
+                var rowdata = (ExcelGridControl.ExcelData)value;
+                var rowid = rowdata.idx;
+                var coloumnid = param.columnID;
 
+                if (rowdata.diffstatus != null) {
+                    DiffStatus status = rowdata.diffstatus[coloumnid].Status;
+
+                    switch (status) {
+                        case DiffStatus.Modified:
+                            return Brushes.Yellow;
+                        case DiffStatus.Deleted:
+                            return Brushes.Gray;
+                        case DiffStatus.Inserted:
+                            return Brushes.LightGreen;
+                        default:
+                            return DependencyProperty.UnsetValue;
+                    }
+                }
+            } 
+            return DependencyProperty.UnsetValue;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {

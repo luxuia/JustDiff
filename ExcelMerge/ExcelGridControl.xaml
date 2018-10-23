@@ -17,7 +17,9 @@
         </Grid.ColumnDefinitions>
 
         <Grid Grid.Row="0" Grid.Column="0" SizeChanged="ExcelGridResized">
-            <DataGrid x:Name="ExcelGrid" ItemsSource="{Binding}" AutoGenerateColumns="False" AllowDrop="True" Drop="ExcelGrid_Drop" LoadingRow="ExcelGrid_LoadingRow">
+            <DataGrid x:Name="ExcelGrid" ItemsSource="{Binding}" AutoGenerateColumns="False" 
+                      AllowDrop="True" Drop="ExcelGrid_Drop" LoadingRow="ExcelGrid_LoadingRow" 
+                        ScrollViewer.ScrollChanged ="ExcelGrid_ScrollChanged">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Name" Binding="{Binding Name}"/>
                     <DataGridTextColumn Header="Test" Binding="{Binding Test}" Width="*" />
