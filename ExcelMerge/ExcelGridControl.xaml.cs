@@ -22,29 +22,15 @@ namespace ExcelMerge {
     /// Interaction logic for ExcelGridControl.xaml
     /// </summary>
     public partial class ExcelGridControl : UserControl {
-        public class ExcelData :DynamicObject {
-            public Dictionary<string, string> data = new Dictionary<string, string>();
-            public int idx;
-            public string tag;
 
-            public List<DiffResult<string>> diffstatus;
-            public Dictionary<int, int> RowID2DiffMap;
 
-            public override bool TryGetMember(GetMemberBinder binder, out object result) {
-                string ret = null;
-                if (data.TryGetValue(binder.Name, out ret)) {
-                    result = ret;
+        public bool isSrc {
+            get { return Tag as string == "src"; }
+        }
 
-                    return true;
-                }
-                result = ret;
-                return false;
-            }
-
-            public override bool TrySetMember(SetMemberBinder binder, object value) {
-                data[binder.Name] = value.ToString();
-
-                return true;
+        public string otherTag {
+            get {
+                return isSrc ? "dst" : "src";
             }
         }
 
@@ -54,28 +40,28 @@ namespace ExcelMerge {
             var data = new ObservableCollection<ExcelData>();
 
             ExcelGrid.DataContext = data;
+
+        }
+
+        private void Item_Click1(object sender, RoutedEventArgs e) {
+            var send = sender;
+        }
+
+        private void Menu_CopyToSide(object sender, RoutedEventArgs e) {
+            var send = sender;
+
+            var selectCells = ExcelGrid.SelectedCells;
+
+            MainWindow.instance.CopyCellsValue(Tag as string, otherTag, selectCells);
         }
 
         public void RefreshView() {
             ExcelGrid.Items.Refresh();
         }
 
-        private void selectionCommandClick(object sender, RoutedEventArgs e) {
-
-        }
-
         private void ExcelGridResized(object sender, SizeChangedEventArgs e) {
 
         }
-
-        private void hscroll_Scroll(object sender, System.Windows.Controls.Primitives.ScrollEventArgs e) {
-
-        }
-
-        private void vscroll_Scroll(object sender, System.Windows.Controls.Primitives.ScrollEventArgs e) {
-
-        }
-
 
         DependencyProperty GetDependencyPropertyByName(Type dependencyObjectType, string dpName) {
             DependencyProperty dp = null;
@@ -101,9 +87,12 @@ namespace ExcelMerge {
             ExcelGrid.Columns.Clear();
             var columns = ExcelGrid.Columns;
             var header = sheet.GetRow(2);
+            if (header == null) return;
+
             // header不会空
-            var headerStr = new string[header.Cells.Count];
-            for (int i = 0; i < header.Cells.Count; ++i) {
+            var columnCount = header.Cells.Count;
+            var headerStr = new string[columnCount];
+            for (int i = 0; i < columnCount; ++i) {
                 var cell = header.Cells[i];
                 var column = new DataGridTextColumn();
                 var str = Util.GetCellValue(cell);
@@ -130,6 +119,11 @@ namespace ExcelMerge {
 
             var datas = new ObservableCollection<ExcelData>();
 
+            int MAX_RANGE_COUNT = 3;
+
+            int changedAnchorCount = 0;
+            var rangeData = new List<ExcelData>();
+
             if (MainWindow.instance.diffSheetName != null) {
                 int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => tag == "src" ? a.Obj1.ID == wrap.sheet : a.Obj2.ID == wrap.sheet);
 
@@ -137,7 +131,7 @@ namespace ExcelMerge {
 
                 for (int j = 0; ; j++) {
                     var row = sheet.GetRow(j);
-                    if (row == null) break;
+                    if (row == null || !Util.CheckValideRow(row)) break;
 
                     var data = new ExcelData();
                     data.idx = row.RowNum;
@@ -150,21 +144,53 @@ namespace ExcelMerge {
                         data.RowID2DiffMap = status.rowID2DiffMap2;
                     }
 
-                    if (j < 3)
+                    if (j < 3) {
                         data.diffstatus = status.diffHead;
-                    else {
+                        changedAnchorCount = 1;
+                    }else {
 
                         data.diffstatus = status.diffSheet[data.RowID2DiffMap[j]];
-                    }
 
-                    for (int i = 0; i < status.columnCount; ++i) {
+                        var changed = data.diffstatus.Any((a) => a.Status != DiffStatus.Equal);
+
+                        if (changed) {
+                            changedAnchorCount = MAX_RANGE_COUNT;
+                        }
+                        else {
+
+                        }
+                    }
+        
+                    for (int i = 0; i < columnCount; ++i) {
                         var cell = row.GetCell(i);
                         data.data[headerStr[i]] = Util.GetCellValue(cell);
                     }
-                    datas.Add(data);
+                    if (changedAnchorCount > 0) {
+
+                        foreach (var i in rangeData) {
+                            datas.Add(i);
+                        }
+                        rangeData.Clear();
+
+                        datas.Add(data);
+                        changedAnchorCount--;
+                    }
+                    else {
+                        if (rangeData.Count > 2) {
+                            rangeData.RemoveAt(0);
+                        }
+                        rangeData.Add(data);
+                    }
                 }
             }
             ExcelGrid.DataContext = datas;
+
+
+            CtxMenu.Items.Clear();
+            var item = new MenuItem();
+            item.Header = "复制到" + (isSrc ? "右侧" : "左侧");
+            item.Click += Menu_CopyToSide;
+            CtxMenu.Items.Add(item);
         }
 
         public void HandleFileOpen(string file, FileOpenType type) {
@@ -192,7 +218,25 @@ namespace ExcelMerge {
         private void ExcelGrid_ScrollChanged(object sender, ScrollChangedEventArgs e) {
             var tag = sender;
 
-            MainWindow.instance.OnGridScrollChanged(Tag as string, e);
+            if (MainWindow.instance != null)
+                MainWindow.instance.OnGridScrollChanged(Tag as string, e);
+        }
+
+        private void ExcelGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+            if (e.AddedItems.Count > 0) {
+                // chang selected row
+                var row = e.AddedItems[0] as ExcelData;
+                if (row != null) {
+                    // 新行 NewRowItem 类
+                    MainWindow.instance.OnSelectGridRow(Tag as string, row.idx);
+                }
+            }
+        }
+
+        private void ExcelGrid_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e) {
+            if (e.AddedCells.Count > 0) {
+                var cells = e.AddedCells[0];
+            }
         }
     }
 
@@ -200,12 +244,12 @@ namespace ExcelMerge {
 
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
             var param = (ExcelGridControl.ConverterParamter)parameter;
-            if (value is ExcelGridControl.ExcelData) {
-                var rowdata = (ExcelGridControl.ExcelData)value;
+            if (value is ExcelData) {
+                var rowdata = (ExcelData)value;
                 var rowid = rowdata.idx;
                 var coloumnid = param.columnID;
 
-                if (rowdata.diffstatus != null) {
+                if (rowdata.diffstatus != null && rowdata.diffstatus.Count > coloumnid) {
                     DiffStatus status = rowdata.diffstatus[coloumnid].Status;
 
                     switch (status) {

@@ -10,6 +10,7 @@ using NPOI.SS.UserModel;
 using System.Windows.Controls;
 using System.Collections.ObjectModel;
 using NetDiff;
+using System.Dynamic;
 
 namespace ExcelMerge {
     class Util {
@@ -69,6 +70,59 @@ namespace ExcelMerge {
             }
             return null;
         }
+
+        public static bool CheckValideRow(IRow row) {
+            var str = string.Empty;
+            for (int i = 0; i < 5; i++) {
+                str += GetCellValue(row.Cells[0]);
+            }
+            return !string.IsNullOrWhiteSpace(str);
+        }
+
+        public static bool CopyCell(ICell oldCell, ICell newCell) {
+            if (oldCell.CellStyle != null) {
+                // apply style from old cell to new cell 
+                // 不是一个xls，没法直接拷贝cellstyle
+                //newCell.CellStyle = oldCell.CellStyle;
+            }
+
+            // If there is a cell comment, copy
+            if (oldCell.CellComment != null) {
+                newCell.CellComment = oldCell.CellComment;
+            }
+
+            // If there is a cell hyperlink, copy
+            if (oldCell.Hyperlink != null) {
+                newCell.Hyperlink = oldCell.Hyperlink;
+            }
+
+            // Set the cell data type
+            newCell.SetCellType(oldCell.CellType);
+
+            // Set the cell data value
+            switch (oldCell.CellType) {
+                case CellType.Blank:
+                    newCell.SetCellValue(oldCell.StringCellValue);
+                    break;
+                case CellType.Boolean:
+                    newCell.SetCellValue(oldCell.BooleanCellValue);
+                    break;
+                case CellType.Error:
+                    newCell.SetCellErrorValue(oldCell.ErrorCellValue);
+                    break;
+                case CellType.Formula:
+                    newCell.SetCellFormula(oldCell.CellFormula);
+                    break;
+                case CellType.Numeric:
+                    newCell.SetCellValue(oldCell.NumericCellValue);
+                    break;
+                case CellType.String:
+                    newCell.SetCellValue(oldCell.RichStringCellValue);
+                    break;
+            }
+
+            return true;
+        }
     }
 
 
@@ -83,13 +137,22 @@ namespace ExcelMerge {
         public List<ComboBoxItem> sheetCombo;
         public List<SheetNameCombo> sheetName;
 
-        public Dictionary<int, int> ComboIdToItemIdx;
+        public Dictionary<int, int> ItemID2ComboIdx;
+
+        public ISheet GetCurSheet() {
+            return book.GetSheetAt(sheet);
+        }
     }
 
     public enum FileOpenType {
         Drag,
         Menu,
         Prog, //因为diff等形式从程序内部打开的
+    }
+
+    public enum Mode {
+        Diff,
+        Merge,
     }
 
     public class SheetDiffStatus {
@@ -138,6 +201,32 @@ namespace ExcelMerge {
 
         public int GetHashCode(SheetNameCombo a) {
             return a.Name.GetHashCode();
+        }
+    }
+
+    public class ExcelData : DynamicObject {
+        public Dictionary<string, string> data = new Dictionary<string, string>();
+        public int idx;
+        public string tag;
+
+        public List<DiffResult<string>> diffstatus;
+        public Dictionary<int, int> RowID2DiffMap;
+
+        public override bool TryGetMember(GetMemberBinder binder, out object result) {
+            string ret = null;
+            if (data.TryGetValue(binder.Name, out ret)) {
+                result = ret;
+
+                return true;
+            }
+            result = ret;
+            return false;
+        }
+
+        public override bool TrySetMember(SetMemberBinder binder, object value) {
+            data[binder.Name] = value.ToString();
+
+            return true;
         }
     }
 

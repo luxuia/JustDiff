@@ -28,14 +28,15 @@
                 <Label>
                     SVN:
                 </Label>
-                <RadioButton GroupName="SVN" Content="Diff" Margin="5" IsChecked="True"/>
-                <RadioButton GroupName="SVN" Content="Merge" Margin="5"/>
+                <RadioButton GroupName="SVN" Content="Diff" Margin="5" IsChecked="True" Checked="RadioButton_Checked"/>
+                <RadioButton GroupName="SVN" Content="Merge" Margin="5" Checked="RadioButton_Checked"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <Label Content="Revision:"/>
                 <TextBox Name="SVNVerson" Width="100" Height="20" HorizontalContentAlignment="Right"/>
                 <Label Content="Select:"/>
                 <ComboBox Name="SVNRevisionCombo" Width="50" DisplayMemberPath="Revision" SelectedValuePath="ID" SelectionChanged="SVNResivionionList_SelectionChanged"/>
+
             </StackPanel>
         </StackPanel>
 
@@ -51,6 +52,8 @@
 
             <Label Name="DstFilePath" Grid.Row="0" Grid.Column="0">c:/dir/to/path.xls</Label>
             <ComboBox Name="DstFileSheetsCombo" Grid.Row="0" Grid.Column="1" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="DstFileSheetsCombo_SelectionChanged"></ComboBox>
+
+            <Button Name="DoDiff" Grid.Row="1" Grid.Column="1" Margin="10,10,10,10" Click="DoDiff_Click" Content="Diff"/>
         </Grid>
 
         <Border Grid.Row="1" Grid.Column="0" Background="LightYellow" />
