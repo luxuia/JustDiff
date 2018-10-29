@@ -52,8 +52,11 @@
 
             <Label Name="DstFilePath" Grid.Row="0" Grid.Column="0">c:/dir/to/path.xls</Label>
             <ComboBox Name="DstFileSheetsCombo" Grid.Row="0" Grid.Column="1" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="DstFileSheetsCombo_SelectionChanged"></ComboBox>
+            <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.ColumnSpan="2" Grid.Column="0">
+                <Button Name="DoDiff" Grid.Row="1" Grid.Column="1" Margin="10,10,10,10" Click="DoDiff_Click" Content="Diff" Width="50"/>
+                <Button Name="ApplyChange" Grid.Row="1" Grid.Column="1" Margin="10,10,10,10" Click="ApplyChange_Click" Content="Apply" Width="50"/>
+            </StackPanel>
 
-            <Button Name="DoDiff" Grid.Row="1" Grid.Column="1" Margin="10,10,10,10" Click="DoDiff_Click" Content="Diff"/>
         </Grid>
 
         <Border Grid.Row="1" Grid.Column="0" Background="LightYellow" />

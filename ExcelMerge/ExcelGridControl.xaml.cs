@@ -43,10 +43,6 @@ namespace ExcelMerge {
 
         }
 
-        private void Item_Click1(object sender, RoutedEventArgs e) {
-            var send = sender;
-        }
-
         private void Menu_CopyToSide(object sender, RoutedEventArgs e) {
             var send = sender;
 
@@ -119,7 +115,7 @@ namespace ExcelMerge {
 
             int changedAnchorCount = 0;
             var rangeData = new List<ExcelData>();
-
+            /*
             if (MainWindow.instance.diffSheetName != null) {
                 int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => tag == "src" ? a.Obj1!=null&& a.Obj1.ID == wrap.sheet : a.Obj2!=null&& a.Obj2.ID == wrap.sheet);
 
@@ -133,19 +129,21 @@ namespace ExcelMerge {
                     data.idx = row.RowNum;
                     data.tag = Tag as string;
 
-                    if (tag == "src") {
-                        data.RowID2DiffMap = status.rowID2DiffMap1;
+                    var rowid2DiffMap = status.rowID2DiffMap1;
+                    if (tag == "dst") {
+                        rowid2DiffMap = status.rowID2DiffMap2;
                     }
-                    else {
-                        data.RowID2DiffMap = status.rowID2DiffMap2;
-                    }
-
+                    
                     if (j < 3) {
                         data.diffstatus = status.diffHead;
                         changedAnchorCount = 1;
                     }else {
 
-                        data.diffstatus = status.diffSheet[data.RowID2DiffMap[j]];
+                        if (rowid2DiffMap.ContainsKey(j+1)) {
+
+                        }
+
+                        data.diffstatus = status.diffSheet[rowid2DiffMap[j]];
 
                         var changed = data.diffstatus.Any((a) => a.Status != DiffStatus.Equal);
 
@@ -179,8 +177,61 @@ namespace ExcelMerge {
                     }
                 }
             }
-            ExcelGrid.DataContext = datas;
+            */
+            // 不把diff结果转换为原来的顺序。因为隐藏相同行后，转换没有意义
+            if (MainWindow.instance.diffSheetName != null) {
+                int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => tag == "src" ? a.Obj1 != null && a.Obj1.ID == wrap.sheet : a.Obj2 != null && a.Obj2.ID == wrap.sheet);
 
+                var status = MainWindow.instance.sheetsDiff[sheetDiffidx];
+
+                // 头
+                for (int j = 0; j<3; j++) {
+                    var row = sheet.GetRow(j);
+                    if (row == null || !Util.CheckValideRow(row)) break;
+
+                    var data = new ExcelData();
+                    data.idx = row.RowNum;
+                    data.tag = Tag as string;
+
+                    var rowid2DiffMap = status.rowID2DiffMap1;
+                    if (tag == "dst") {
+                        rowid2DiffMap = status.rowID2DiffMap2;
+                    }
+                    data.diffstatus = status.diffHead;
+
+                    for (int i = 0; i < columnCount; ++i) {
+                        var cell = row.GetCell(i);
+                        data.data[headerStr[i]] = Util.GetCellValue(cell);
+                    }
+
+                    datas.Add(data);
+                }
+
+                for (int j = 0; j< status.diffSheet.Count; j++) {
+                    if (status.diffSheet[j].Any(a => a.Status != DiffStatus.Equal)) {
+                        int rowid = status.Diff2RowID1[j];
+                        if (tag == "dst") {
+                            rowid = status.Diff2RowID2[j];
+                        }
+
+                        var row = sheet.GetRow(rowid);
+
+                        var data = new ExcelData();
+                        data.idx = row.RowNum;
+                        data.tag = Tag as string;
+                        data.diffstatus = status.diffSheet[j];
+
+                        for (int i = 0; i < columnCount; ++i) {
+                            var cell = row.GetCell(i);
+                            data.data[headerStr[i]] = Util.GetCellValue(cell);
+                        }
+
+                        datas.Add(data);
+                    }
+                }
+            }
+
+            ExcelGrid.DataContext = datas;
 
             CtxMenu.Items.Clear();
             var item = new MenuItem();

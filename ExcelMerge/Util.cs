@@ -80,6 +80,7 @@ namespace ExcelMerge {
         }
 
         public static bool CopyCell(ICell oldCell, ICell newCell) {
+            if (oldCell == null || newCell == null) return false;
             if (oldCell.CellStyle != null) {
                 // apply style from old cell to new cell 
                 // 不是一个xls，没法直接拷贝cellstyle
@@ -173,6 +174,10 @@ namespace ExcelMerge {
         public Dictionary<int, int> rowID2DiffMap1;
         public Dictionary<int, int> rowID2DiffMap2;
 
+        public Dictionary<int, int> Diff2RowID1;
+        public Dictionary<int, int> Diff2RowID2;
+
+
         public bool changed;
     }
 
@@ -219,7 +224,7 @@ namespace ExcelMerge {
 
         public List<DiffResult<string>> diffstatus;
         public Dictionary<int, int> RowID2DiffMap;
-
+  
         public override bool TryGetMember(GetMemberBinder binder, out object result) {
             string ret = null;
             if (data.TryGetValue(binder.Name, out ret)) {

@@ -19,6 +19,7 @@ using SharpSvn.UI;
 using System.Collections.ObjectModel;
 using NetDiff;
 using string2int = System.Collections.Generic.KeyValuePair<string, int>;
+using System.IO;
 
 namespace ExcelMerge {
  
@@ -211,28 +212,45 @@ namespace ExcelMerge {
 
             status.columnCount = status.diffHead.Count;
 
-            status.diffFistColumn = GetIDDiffList(src, dst);
+            status.diffFistColumn = GetIDDiffList(src, dst, 2);
 
             changed = changed || status.diffFistColumn.Any(a => a.Status != DiffStatus.Equal);
 
             status.diffSheet = new List<List<DiffResult<string>>>();
             status.rowID2DiffMap1 = new Dictionary<int, int>();
             status.rowID2DiffMap2 = new Dictionary<int, int>();
+            status.Diff2RowID1 = new Dictionary<int, int>();
+            status.Diff2RowID2 = new Dictionary<int, int>();
 
             foreach (var diffkv in status.diffFistColumn) {
                 var rowid1 = diffkv.Obj1.Value;
                 var rowid2 = diffkv.Obj2.Value;
                 if (diffkv.Obj1.Key == null) {
+                    // 创建新行，方便比较
                     rowid1 = -1;
                 }
                 if (diffkv.Obj2.Key == null) {
                     rowid2 = -1;
                 }
-
-                status.rowID2DiffMap1[rowid1] = status.diffSheet.Count;
-                status.rowID2DiffMap2[rowid2] = status.diffSheet.Count;
-
                 var diffrow = DiffSheetRow(src, rowid1, dst, rowid2, status);
+
+                if (diffkv.Obj1.Key == null) {
+                    // 创建新行，方便比较,放在后面是为了保证diff的时候是new,delete的形式，而不是modify
+                    rowid1 = src.LastRowNum + 1;
+                    src.CreateRow(rowid1);
+                }
+                if (diffkv.Obj2.Key == null) {
+                    rowid2 = dst.LastRowNum + 1;
+                    dst.CreateRow(rowid2);
+                }
+
+                int diffIdx = status.diffSheet.Count;
+
+                status.rowID2DiffMap1[rowid1] = diffIdx;
+                status.rowID2DiffMap2[rowid2] = diffIdx;
+
+                status.Diff2RowID1[diffIdx] = rowid1;
+                status.Diff2RowID2[diffIdx] = rowid2;
 
                 status.diffSheet.Add(diffrow);
 
@@ -258,17 +276,10 @@ namespace ExcelMerge {
             }
 
             var src = InitWorkWrap(file1);
-            var sheetidx = 0;
-            if (!string.IsNullOrEmpty(oldsheetName)) {
-                sheetidx = src.book.GetSheetIndex(oldsheetName);
-            }
-            src.sheet = sheetidx;
+
 
             var dst = InitWorkWrap(file2);
-            if (!string.IsNullOrEmpty(oldsheetName)) {
-                sheetidx = dst.book.GetSheetIndex(oldsheetName);
-            }
-            dst.sheet = sheetidx;
+
 
             var option = new DiffOption<SheetNameCombo>();
             option.EqualityComparer = new SheetNameComboComparer();
@@ -285,6 +296,20 @@ namespace ExcelMerge {
                     var sheet1 = sheetname.Obj1.ID;
                     var sheet2 = sheetname.Obj2.ID;
                     sheetsDiff[i] = DiffSheet(src.book.GetSheetAt(sheet1), dst.book.GetSheetAt(sheet2));
+
+                    if (sheetsDiff[i] != null && sheetsDiff[i].changed) {
+                        oldsheetName = sheetname.Obj1.Name;
+                        var sheetidx = 0;
+                        if (!string.IsNullOrEmpty(oldsheetName)) {
+                            sheetidx = src.book.GetSheetIndex(oldsheetName);
+                        }
+                        src.sheet = sheetidx;
+
+                        if (!string.IsNullOrEmpty(oldsheetName)) {
+                            sheetidx = dst.book.GetSheetIndex(oldsheetName);
+                        }
+                        dst.sheet = sheetidx;
+                    }
                 }
             }
 
@@ -380,25 +405,40 @@ namespace ExcelMerge {
         }
 
         // 把第一列认为是id列，检查增删, <value, 行id>
-        List<DiffResult<string2int>> GetIDDiffList(ISheet sheet1, ISheet sheet2) {
+        List<DiffResult<string2int>> GetIDDiffList(ISheet sheet1, ISheet sheet2, int checkCellCount) {
             var list1 = new List<string2int>();
             var list2 = new List<string2int>();
+
+            var nameHash = new HashSet<string>();
 
             for (int i =3; ; i++) {
                 var row = sheet1.GetRow(i);
                 if (row == null || !Util.CheckValideRow(row)) break;
 
-                var val = Util.GetCellValue(row.Cells[0]) + Util.GetCellValue(row.Cells[1]);
+                var val = "";
+                for (var j = 0; j < checkCellCount; ++j) {
+                    val += Util.GetCellValue(row.Cells[j]);
+                }
+
+                if (nameHash.Contains(val) && checkCellCount < 5) return GetIDDiffList(sheet1, sheet2, checkCellCount + 1);
+                nameHash.Add(val);
 
                 list1.Add(new string2int(val, i));
             }
            list1.Sort(delegate (string2int a, string2int b) {
                 return a.Key.CompareTo(b.Key);
             });
+            nameHash.Clear();
             for (int i = 3; ; i++) {
                 var row = sheet2.GetRow(i);
                 if (row == null || !Util.CheckValideRow(row)) break;
-                var val = Util.GetCellValue(row.Cells[0]) + Util.GetCellValue(row.Cells[1]);
+                var val = "";
+                for (var j = 0; j < checkCellCount; ++j) {
+                    val += Util.GetCellValue(row.Cells[j]);
+                }
+
+                if (nameHash.Contains(val) && checkCellCount < 5) return GetIDDiffList(sheet1, sheet2, checkCellCount + 1);
+                nameHash.Add(val);
 
                 list2.Add(new string2int(val, i));
             }
@@ -512,6 +552,12 @@ namespace ExcelMerge {
 
         private void DoDiff_Click(object sender, RoutedEventArgs e) {
             Diff(SrcFile, DstFile);
+        }
+
+        private void ApplyChange_Click(object sender, RoutedEventArgs e) {
+            var dstfile = File.OpenWrite(books["dst"].file);
+
+            books["dst"].book.Write(dstfile);
         }
     }
 
