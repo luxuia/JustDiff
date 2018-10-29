@@ -120,7 +120,7 @@ namespace ExcelMerge {
             if (tag == "src") {
                 Collection<SvnLogEventArgs> logitems;
 
-                DateTime startDateTime = DateTime.Now.AddDays(-30);
+                DateTime startDateTime = DateTime.Now.AddDays(-60);
                 DateTime endDateTime = DateTime.Now;
                 var svnRange = new SvnRevisionRange(new SvnRevision(startDateTime), new SvnRevision(endDateTime));
 
@@ -179,7 +179,7 @@ namespace ExcelMerge {
             }
             list.Sort((a, b) => { return a.Name.CompareTo(b.Name); });
 
-            wb.sheetName = list;
+            wb.sheetNameCombos = list;
 
             wb.ItemID2ComboIdx = new Dictionary<int, int>();
 
@@ -248,22 +248,31 @@ namespace ExcelMerge {
 
             return status;
         }
+        
 
         public void Diff(string file1, string file2) {
 
-            int old_sheet = 0;
+            string oldsheetName = null;
             if (books.ContainsKey("src")) {
-                old_sheet = books["src"].sheet;
+                oldsheetName = books["src"].sheetname;
             }
 
             var src = InitWorkWrap(file1);
-            src.sheet = old_sheet;
+            var sheetidx = 0;
+            if (!string.IsNullOrEmpty(oldsheetName)) {
+                sheetidx = src.book.GetSheetIndex(oldsheetName);
+            }
+            src.sheet = sheetidx;
+
             var dst = InitWorkWrap(file2);
-            dst.sheet = old_sheet;
+            if (!string.IsNullOrEmpty(oldsheetName)) {
+                sheetidx = dst.book.GetSheetIndex(oldsheetName);
+            }
+            dst.sheet = sheetidx;
 
             var option = new DiffOption<SheetNameCombo>();
             option.EqualityComparer = new SheetNameComboComparer();
-            var result = DiffUtil.Diff(src.sheetName, dst.sheetName, option);
+            var result = DiffUtil.Diff(src.sheetNameCombos, dst.sheetNameCombos, option);
             diffSheetName = DiffUtil.OptimizeCaseDeletedFirst(result).ToList();
 
             books["src"] = src;
@@ -284,7 +293,7 @@ namespace ExcelMerge {
             DstFilePath.Content = file2;
 
             SrcFileSheetsCombo.Items.Clear();
-            foreach (var item in books["src"].sheetCombo) {
+            foreach (var item in src.sheetCombo) {
 
                 int index = diffSheetName.FindIndex(a => a.Obj1 != null && a.Obj1.ID == (item.Content as SheetNameCombo).ID);
                 SolidColorBrush color = null;
@@ -302,10 +311,11 @@ namespace ExcelMerge {
 
                 SrcFileSheetsCombo.Items.Add(item);
             }
-            SrcFileSheetsCombo.SelectedItem = books["src"].sheetCombo[old_sheet];
+            var comboidx = src.ItemID2ComboIdx[src.sheet];
+            SrcFileSheetsCombo.SelectedItem = src.sheetCombo[comboidx];
 
             DstFileSheetsCombo.Items.Clear();
-            foreach (var item in books["dst"].sheetCombo) {
+            foreach (var item in dst.sheetCombo) {
 
                 int index = diffSheetName.FindIndex(a => a.Obj2 != null && a.Obj2.ID == (item.Content as SheetNameCombo).ID);
                 SolidColorBrush color = null;
@@ -323,7 +333,8 @@ namespace ExcelMerge {
 
                 DstFileSheetsCombo.Items.Add(item);
             }
-            DstFileSheetsCombo.SelectedItem = books["dst"].sheetCombo[old_sheet];
+            comboidx = dst.ItemID2ComboIdx[dst.sheet];
+            DstFileSheetsCombo.SelectedItem = dst.sheetCombo[comboidx];
 
             DstDataGrid.RefreshData();
             SrcDataGrid.RefreshData();

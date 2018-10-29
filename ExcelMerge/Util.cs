@@ -128,14 +128,22 @@ namespace ExcelMerge {
 
     public class WorkBookWrap {
         public IWorkbook book;
-        public int sheet;
+        private int _sheet;
+        public int sheet {
+            set {
+                _sheet = Math.Max( Math.Min( value, book.NumberOfSheets-1), 0);
+                sheetname = book.GetSheetName(_sheet);
+            }get { return _sheet; }
+        }
+
+        public string sheetname;
         public string file;
         public string filename;
 
         public int reversion;
 
         public List<ComboBoxItem> sheetCombo;
-        public List<SheetNameCombo> sheetName;
+        public List<SheetNameCombo> sheetNameCombos;
 
         public Dictionary<int, int> ItemID2ComboIdx;
 

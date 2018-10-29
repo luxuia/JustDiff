@@ -55,10 +55,6 @@ namespace ExcelMerge {
             MainWindow.instance.CopyCellsValue(Tag as string, otherTag, selectCells);
         }
 
-        public void RefreshView() {
-            ExcelGrid.Items.Refresh();
-        }
-
         private void ExcelGridResized(object sender, SizeChangedEventArgs e) {
 
         }
@@ -125,7 +121,7 @@ namespace ExcelMerge {
             var rangeData = new List<ExcelData>();
 
             if (MainWindow.instance.diffSheetName != null) {
-                int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => tag == "src" ? a.Obj1.ID == wrap.sheet : a.Obj2.ID == wrap.sheet);
+                int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => tag == "src" ? a.Obj1!=null&& a.Obj1.ID == wrap.sheet : a.Obj2!=null&& a.Obj2.ID == wrap.sheet);
 
                 var status = MainWindow.instance.sheetsDiff[sheetDiffidx];
 
@@ -195,9 +191,14 @@ namespace ExcelMerge {
 
         public void HandleFileOpen(string file, FileOpenType type) {
             var wb = WorkbookFactory.Create(file);
-            
-            if (wb!=null)
-                MainWindow.instance.OnFileLoaded(file, Tag as string, type);
+
+            if (wb != null) {
+                var window = MainWindow.instance;
+
+                window.books.Clear();
+                window.OnFileLoaded(file, Tag as string, type);
+                RefreshData();
+            }
         }
 
         private void ExcelGrid_Drop(object sender, DragEventArgs e) {
