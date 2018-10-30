@@ -86,8 +86,14 @@ namespace ExcelMerge {
             var headerStr = new string[columnCount];
             for (int i = 0; i < columnCount; ++i) {
                 var cell = header.Cells[i];
-                var column = new DataGridTextColumn();
+                
                 var str = Util.GetCellValue(cell);
+
+                if (string.IsNullOrWhiteSpace(str)) {
+                    columnCount = i;
+                    break;
+                }
+                var column = new DataGridTextColumn();
 
                 column.Binding = new Binding(str);// { Converter = new ConvertToBackground() };
                 column.Header = str;

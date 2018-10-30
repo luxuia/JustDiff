@@ -212,7 +212,7 @@ namespace ExcelMerge {
 
             status.columnCount = status.diffHead.Count;
 
-            status.diffFistColumn = GetIDDiffList(src, dst, 2);
+            status.diffFistColumn = GetIDDiffList(src, dst, 1);
 
             changed = changed || status.diffFistColumn.Any(a => a.Status != DiffStatus.Equal);
 
@@ -399,7 +399,13 @@ namespace ExcelMerge {
             if (row0 == null || row1 == null || row2 == null) return null;
 
             for (int i = 0; i <row0.Cells.Count;++i) {
-                header.Add(string.Concat(Util.GetCellValue(row0.GetCell(i)), ":", Util.GetCellValue(row1.GetCell(i)),":", Util.GetCellValue(row2.GetCell(i))));
+                var s1 = Util.GetCellValue(row0.GetCell(i));
+                var s2 = Util.GetCellValue(row1.GetCell(i));
+                var s3 = Util.GetCellValue(row2.GetCell(i));
+                if (string.IsNullOrWhiteSpace(s1)) {
+                    return header;
+                }
+                header.Add(string.Concat(s1, ":", s2,":", s3 ));
             }
             return header;
         }
@@ -420,7 +426,7 @@ namespace ExcelMerge {
                     val += Util.GetCellValue(row.Cells[j]);
                 }
 
-                if (nameHash.Contains(val) && checkCellCount < 5) return GetIDDiffList(sheet1, sheet2, checkCellCount + 1);
+                if (nameHash.Contains(val) && checkCellCount < 6) return GetIDDiffList(sheet1, sheet2, checkCellCount + 1);
                 nameHash.Add(val);
 
                 list1.Add(new string2int(val, i));

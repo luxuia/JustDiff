@@ -48,6 +48,38 @@ namespace NetDiff
             var nextStatus = deleteFirst ? DiffStatus.Inserted : DiffStatus.Deleted;
 
             var queue = new Queue<DiffResult<T>>(diffResults);
+            var list = diffResults.ToList();
+
+            int j = 0;
+            int optCount = 0;
+            for (var i = 0; i < list.Count;) {
+                j = i + 1;
+                optCount = 0;
+                
+                if (list[i].Status == currentStatus) {
+                    while (j < list.Count && list[j].Status == currentStatus ) {
+                        j++;
+                    }
+                    if ( j<list.Count && list[j].Status == nextStatus) {
+                        while ( optCount < (j-i) && j+optCount < list.Count && list[j+optCount].Status == nextStatus) {
+                            optCount++;
+                        }
+                    }
+                }
+                while (i < (j-optCount) && i < list.Count) {
+                    yield return list[i];
+                    i++;
+                }
+                while (i< j && i < list.Count) {
+                    var obj1 = deleteFirst ? list[i].Obj1 : list[i+optCount].Obj1;
+                    var obj2 = deleteFirst ? list[i+optCount].Obj2 : list[i].Obj2;
+                    yield return new DiffResult<T>(obj1, obj2, DiffStatus.Modified);
+                    i++;
+                }
+                i += optCount;
+            }
+
+            /*
             while (queue.Any())
             {
                 var result = queue.Dequeue();
@@ -67,6 +99,7 @@ namespace NetDiff
 
                 yield return result;
             }
+            */
         }
 
         private static IEnumerable<DiffResult<T>> MakeResults<T>(IEnumerable<Point> waypoints, IEnumerable<T> seq1, IEnumerable<T> seq2)
