@@ -60,7 +60,7 @@ namespace ExcelMerge {
         
         public void OnFileLoaded(string file, string tag, FileOpenType type, int sheet = 0) {
 
-            var wb = WorkbookFactory.Create(file);
+            var wb = Util.GetWorkBook(file);
 
             books[tag] = new WorkBookWrap() { book = wb, sheet = sheet, file = file, filename = System.IO.Path.GetFileName(file) };
 
@@ -168,7 +168,7 @@ namespace ExcelMerge {
 
         WorkBookWrap InitWorkWrap(string file) {
             var wb = new WorkBookWrap() {
-                book = WorkbookFactory.Create(file),
+                book = Util.GetWorkBook(file),
                 file = file,
                 filename = System.IO.Path.GetFileName(file)
             };
@@ -189,6 +189,8 @@ namespace ExcelMerge {
             for (int i = 0; i < list.Count;++i) {
                 wb.ItemID2ComboIdx[list[i].ID] = i;
             }
+
+            wb.SheetValideRow = new Dictionary<string, int>();
 
             return wb;
         }
@@ -236,11 +238,11 @@ namespace ExcelMerge {
 
                 if (diffkv.Obj1.Key == null) {
                     // 创建新行，方便比较,放在后面是为了保证diff的时候是new,delete的形式，而不是modify
-                    rowid1 = src.LastRowNum + 1;
+                    rowid1 =  books["src"].SheetValideRow[src.SheetName] + 1;
                     src.CreateRow(rowid1);
                 }
                 if (diffkv.Obj2.Key == null) {
-                    rowid2 = dst.LastRowNum + 1;
+                    rowid2 = books["dst"].SheetValideRow[dst.SheetName] + 1;
                     dst.CreateRow(rowid2);
                 }
 
@@ -295,6 +297,7 @@ namespace ExcelMerge {
                 if (sheetname.Status == DiffStatus.Equal) {
                     var sheet1 = sheetname.Obj1.ID;
                     var sheet2 = sheetname.Obj2.ID;
+                    
                     sheetsDiff[i] = DiffSheet(src.book.GetSheetAt(sheet1), dst.book.GetSheetAt(sheet2));
 
                     if (sheetsDiff[i] != null && sheetsDiff[i].changed) {
@@ -419,11 +422,14 @@ namespace ExcelMerge {
 
             for (int i =3; ; i++) {
                 var row = sheet1.GetRow(i);
-                if (row == null || !Util.CheckValideRow(row)) break;
+                if (row == null || !Util.CheckValideRow(row)) {
+                    books["src"].SheetValideRow[sheet1.SheetName] = i;
+                    break;
+                };
 
                 var val = "";
                 for (var j = 0; j < checkCellCount; ++j) {
-                    val += Util.GetCellValue(row.Cells[j]);
+                    val += Util.GetCellValue(row.GetCell(j));
                 }
 
                 if (nameHash.Contains(val) && checkCellCount < 6) return GetIDDiffList(sheet1, sheet2, checkCellCount + 1);
@@ -437,13 +443,16 @@ namespace ExcelMerge {
             nameHash.Clear();
             for (int i = 3; ; i++) {
                 var row = sheet2.GetRow(i);
-                if (row == null || !Util.CheckValideRow(row)) break;
+                if (row == null || !Util.CheckValideRow(row)) {
+                    books["dst"].SheetValideRow[sheet2.SheetName] = i;
+                    break;
+                }
                 var val = "";
                 for (var j = 0; j < checkCellCount; ++j) {
-                    val += Util.GetCellValue(row.Cells[j]);
+                    val += Util.GetCellValue(row.GetCell(j));
                 }
 
-                if (nameHash.Contains(val) && checkCellCount < 5) return GetIDDiffList(sheet1, sheet2, checkCellCount + 1);
+                if (nameHash.Contains(val) && checkCellCount < 6) return GetIDDiffList(sheet1, sheet2, checkCellCount + 1);
                 nameHash.Add(val);
 
                 list2.Add(new string2int(val, i));

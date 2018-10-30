@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Collections.ObjectModel;
 using NetDiff;
 using System.Dynamic;
+using System.IO;
 
 namespace ExcelMerge {
     class Util {
@@ -30,8 +31,7 @@ namespace ExcelMerge {
             }
             return null;
         }
-
-
+        
         public static string GetCellValue(ICell cell) {
             var str = string.Empty;
             if (cell == null) return str;
@@ -71,10 +71,16 @@ namespace ExcelMerge {
             return null;
         }
 
+        public static IWorkbook GetWorkBook(string file) {
+            using (var s = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+                return WorkbookFactory.Create(s);
+            }
+        }
+
         public static bool CheckValideRow(IRow row) {
             var str = string.Empty;
             for (int i = 0; i < 5; i++) {
-                str += GetCellValue(row.Cells[0]);
+                str += GetCellValue(row.GetCell(i));
             }
             return !string.IsNullOrWhiteSpace(str);
         }
@@ -147,6 +153,8 @@ namespace ExcelMerge {
         public List<SheetNameCombo> sheetNameCombos;
 
         public Dictionary<int, int> ItemID2ComboIdx;
+
+        public Dictionary<string, int> SheetValideRow;
 
         public ISheet GetCurSheet() {
             return book.GetSheetAt(sheet);

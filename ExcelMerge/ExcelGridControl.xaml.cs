@@ -16,6 +16,7 @@ using System.Windows.Shapes;
 using NPOI.SS.UserModel;
 using System.Dynamic;
 using NetDiff;
+using System.IO;
 
 namespace ExcelMerge {
     /// <summary>
@@ -247,7 +248,7 @@ namespace ExcelMerge {
         }
 
         public void HandleFileOpen(string file, FileOpenType type) {
-            var wb = WorkbookFactory.Create(file);
+            var wb = Util.GetWorkBook(file);
 
             if (wb != null) {
                 var window = MainWindow.instance;
