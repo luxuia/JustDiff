@@ -89,14 +89,16 @@ namespace ExcelMerge {
                 var cell = header.Cells[i];
                 
                 var str = Util.GetCellValue(cell);
-
+  
                 if (string.IsNullOrWhiteSpace(str)) {
                     columnCount = i;
                     break;
                 }
+                var encodestr = System.Uri.EscapeDataString(str);
+
                 var column = new DataGridTextColumn();
 
-                column.Binding = new Binding(str);// { Converter = new ConvertToBackground() };
+                column.Binding = new Binding(encodestr);// { Converter = new ConvertToBackground() };
                 column.Header = str;
 
                 Style aStyle = new Style(typeof(TextBlock));
@@ -113,7 +115,7 @@ namespace ExcelMerge {
 
                 columns.Add(column);
 
-                headerStr[i] = str;
+                headerStr[i] = encodestr;
             }
 
             var datas = new ObservableCollection<ExcelData>();
@@ -315,9 +317,15 @@ namespace ExcelMerge {
                         case DiffStatus.Modified:
                             return Brushes.Yellow;
                         case DiffStatus.Deleted:
-                            return Brushes.Gray;
+                            // 列增删的时候不好处理，不显示影响的格子
+                            if (rowdata.tag == "src")
+                                return Brushes.Gray;
+                            break;
                         case DiffStatus.Inserted:
-                            return Brushes.LightGreen;
+                            // 列增删的时候不好处理，不显示影响的格子
+                            if (rowdata.tag == "dst")
+                                return Brushes.LightGreen;
+                            break;
                         default:
                             return DependencyProperty.UnsetValue;
                     }

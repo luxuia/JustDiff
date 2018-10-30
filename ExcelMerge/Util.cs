@@ -56,7 +56,9 @@ namespace ExcelMerge {
                     str = cell.RichStringCellValue.ToString();
                     break;
             }
-            return str.Replace('(', '-').Replace(')', '-');
+            return str;
+            //return '[' + str + ']';
+            //return str.Replace('(', '-').Replace(')', '-').Replace("/", "-");
         }
 
         public static SolidColorBrush GetColorByDiffStatus(DiffStatus status) {

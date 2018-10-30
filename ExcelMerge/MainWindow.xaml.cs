@@ -213,7 +213,7 @@ namespace ExcelMerge {
             status.diffHead = optimized.ToList();
 
             status.columnCount = status.diffHead.Count;
-
+            
             status.diffFistColumn = GetIDDiffList(src, dst, 1);
 
             changed = changed || status.diffFistColumn.Any(a => a.Status != DiffStatus.Equal);
@@ -426,7 +426,7 @@ namespace ExcelMerge {
                     books["src"].SheetValideRow[sheet1.SheetName] = i;
                     break;
                 };
-
+ 
                 var val = "";
                 for (var j = 0; j < checkCellCount; ++j) {
                     val += Util.GetCellValue(row.GetCell(j));
