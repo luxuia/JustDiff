@@ -47,7 +47,15 @@ namespace ExcelMerge {
                     str = cell.ErrorCellValue.ToString();
                     break;
                 case CellType.Formula:
-                    str = cell.CellFormula;
+                    if (cell.CachedFormulaResultType == CellType.Numeric) {
+                        str = cell.NumericCellValue.ToString();
+                    }
+                    else if (cell.CachedFormulaResultType == CellType.String) {
+                        str = cell.StringCellValue.ToString();
+                    }
+                    else {
+                        str = cell.CellFormula;
+                    }
                     break;
                 case CellType.Numeric:
                     str = cell.NumericCellValue.ToString();

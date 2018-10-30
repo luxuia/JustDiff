@@ -249,14 +249,14 @@ namespace ExcelMerge {
             CtxMenu.Items.Add(item);
         }
 
-        public void HandleFileOpen(string file, FileOpenType type) {
+        public void HandleFileOpen(string file, FileOpenType type, string tag) {
             var wb = Util.GetWorkBook(file);
 
             if (wb != null) {
                 var window = MainWindow.instance;
 
                 window.books.Clear();
-                window.OnFileLoaded(file, Tag as string, type);
+                window.OnFileLoaded(file, tag, type);
                 RefreshData();
             }
         }
@@ -266,7 +266,11 @@ namespace ExcelMerge {
                 var files = e.Data.GetData(DataFormats.FileDrop) as string[];
 
                 if (files != null && files.Any()) {
-                    HandleFileOpen(files[0], FileOpenType.Drag);
+                    HandleFileOpen(files[0], FileOpenType.Drag, Tag as string);
+
+                    if (files.Length > 1) {
+                        HandleFileOpen(files[1], FileOpenType.Drag, otherTag);
+                    }
                 }
             }
         }
