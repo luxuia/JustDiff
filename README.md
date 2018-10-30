@@ -7,4 +7,4 @@ Features:
     默认找到第一个有差异的sheet
     背景色表示差异类型，黄色[修改]，灰色[删除]，绿色[新增]
 
-![demo](demo.png)
+![demo](demo.jpg)
