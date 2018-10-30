@@ -1,0 +1,17 @@
+version: '{build}'
+
+environment:
+  project_name: ExcelMerge
+
+image:
+  - Visual Studio 2017
+
+configuration:
+  - Release
+
+build:
+  project: ExcelMerge.sln
+  verbosity: minimal
+  
+before_build:
+  - nuget restore
