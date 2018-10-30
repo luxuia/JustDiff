@@ -1,6 +1,9 @@
 # ExcelMerge
 
+[![Build status](https://ci.appveyor.com/api/projects/status/ven9wb4k5wrrajub?svg=true)](https://ci.appveyor.com/project/luxuia/excelmerge)
+
 Features:
+
     自带svn日志，方便看各个版本的差异
     预先对excel的行列按内容排序，忽略行位置变化导致的修改
     可以查看已打开的文档

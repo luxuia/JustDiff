@@ -15,3 +15,13 @@ build:
   
 before_build:
   - nuget restore
+
+artifacts:
+- path: ExcelMerge\bin\release\
+  name: test
+deploy:
+- provider: GitHub
+  auth_token:
+    secure: gMWeu6TO6xg0l6mxilJ3zkoYPhr5uV9VCkfcDw7EjSk3JZ+P32pdxUYhr4efPCPP
+  artifact: test
+  draft: true
