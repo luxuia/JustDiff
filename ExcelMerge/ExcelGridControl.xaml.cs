@@ -80,21 +80,24 @@ namespace ExcelMerge {
             ExcelGrid.Columns.Clear();
             var columns = ExcelGrid.Columns;
             var header = sheet.GetRow(2);
-            if (header == null) return;
+            var headerkey = sheet.GetRow(1);
+            if (header == null || headerkey == null) return;
 
             // header不会空
             var columnCount = header.Cells.Count;
             var headerStr = new string[columnCount];
             for (int i = 0; i < columnCount; ++i) {
-                var cell = header.Cells[i];
+                var cell = header.GetCell(i);
+                var cellkey = headerkey.GetCell(i);
                 
                 var str = Util.GetCellValue(cell);
+                var strkey = Util.GetCellValue(cellkey);
   
                 if (string.IsNullOrWhiteSpace(str)) {
                     columnCount = i;
                     break;
                 }
-                var encodestr = System.Uri.EscapeDataString(str);
+                var encodestr = System.Uri.EscapeDataString(strkey);
 
                 var column = new DataGridTextColumn();
 
