@@ -182,6 +182,11 @@ namespace ExcelMerge {
         Merge,
     }
 
+    public enum CellEditMode {
+        Self, // 自己修改
+        OtherSide, // 另一边的格子修改
+    }
+
     public class SheetDiffStatus {
         public int columnCount;
         public List<DiffResult<string>> diffHead;
@@ -194,6 +199,9 @@ namespace ExcelMerge {
 
         public Dictionary<int, int> Diff2RowID1;
         public Dictionary<int, int> Diff2RowID2;
+
+        public Dictionary<int, Dictionary<int, CellEditMode>> RowEdited1;
+        public Dictionary<int, Dictionary<int, CellEditMode>> RowEdited2;
 
 
         public bool changed;
@@ -235,28 +243,40 @@ namespace ExcelMerge {
         }
     }
 
+    public class CellData {
+        public string value;
+        public ICell cell;
+    }
+
     public class ExcelData : DynamicObject {
-        public Dictionary<string, string> data = new Dictionary<string, string>();
-        public int idx;
+        public Dictionary<string, CellData> data = new Dictionary<string, CellData>();
+        public int rowId;
         public string tag;
+        public int diffIdx;
 
         public List<DiffResult<string>> diffstatus;
         public Dictionary<int, int> RowID2DiffMap;
+        public Dictionary<int, CellEditMode> CellEdited;
   
         public override bool TryGetMember(GetMemberBinder binder, out object result) {
-            string ret = null;
+            CellData ret;
             if (data.TryGetValue(binder.Name, out ret)) {
-                result = ret;
+                result = ret.value;
 
                 return true;
             }
-            result = ret;
+            result = "";
             return false;
         }
 
         public override bool TrySetMember(SetMemberBinder binder, object value) {
-            data[binder.Name] = value.ToString();
+            var ret = data[binder.Name];
+            ret.value = value as string;
+            ret.cell.SetCellValue(ret.value);
 
+            MainWindow.instance.OnCellEdited(tag, rowId, ret.cell.ColumnIndex, CellEditMode.Self);
+            MainWindow.instance.RefreshCurSheet();
+  
             return true;
         }
     }

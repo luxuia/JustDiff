@@ -17,6 +17,7 @@ using NPOI.SS.UserModel;
 using System.Dynamic;
 using NetDiff;
 using System.IO;
+using System.Windows.Media;
 
 namespace ExcelMerge {
     /// <summary>
@@ -27,6 +28,12 @@ namespace ExcelMerge {
 
         public bool isSrc {
             get { return Tag as string == "src"; }
+        }
+
+        public string selfTag {
+            get {
+                return Tag as string;
+            }
         }
 
         public string otherTag {
@@ -42,11 +49,24 @@ namespace ExcelMerge {
 
             ExcelGrid.DataContext = data;
 
+            ExcelGrid.CellEditEnding += ExcelGrid_CellEditEnding;
+
+        }
+
+        private void ExcelGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
+            var selectCells = ExcelGrid.SelectedCells;
+            if (e.EditAction == DataGridEditAction.Commit) {
+                var data = e.EditingElement.DataContext as ExcelData;
+                var el = e.EditingElement as TextBox;
+                if (data.data.ContainsKey(e.Column.SortMemberPath)) {
+                    var celldata = data.data[e.Column.SortMemberPath];
+
+                    //MainWindow.instance.SetCellValue(el.Text, celldata.cell);
+                }
+            }
         }
 
         private void Menu_CopyToSide(object sender, RoutedEventArgs e) {
-            var send = sender;
-
             var selectCells = ExcelGrid.SelectedCells;
 
             MainWindow.instance.CopyCellsValue(Tag as string, otherTag, selectCells);
@@ -93,7 +113,7 @@ namespace ExcelMerge {
                 var str = Util.GetCellValue(cell);
                 var strkey = Util.GetCellValue(cellkey);
   
-                if (string.IsNullOrWhiteSpace(str)) {
+                if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(strkey) ) {
                     columnCount = i;
                     break;
                 }
@@ -202,8 +222,9 @@ namespace ExcelMerge {
                     if (row == null || !Util.CheckValideRow(row)) break;
 
                     var data = new ExcelData();
-                    data.idx = row.RowNum;
+                    data.rowId = row.RowNum;
                     data.tag = Tag as string;
+                    data.diffIdx = j;
 
                     var rowid2DiffMap = status.rowID2DiffMap1;
                     if (tag == "dst") {
@@ -213,29 +234,40 @@ namespace ExcelMerge {
 
                     for (int i = 0; i < columnCount; ++i) {
                         var cell = row.GetCell(i);
-                        data.data[headerStr[i]] = Util.GetCellValue(cell);
+                        data.data[headerStr[i]] = new CellData() { value = Util.GetCellValue(cell), cell = cell };
                     }
 
                     datas.Add(data);
                 }
 
+                Dictionary<int, Dictionary<int, CellEditMode>> edited;
+                if (selfTag == "src") {
+                    edited = status.RowEdited1;
+                } else {
+                    edited = status.RowEdited2;
+                }
                 for (int j = 0; j< status.diffSheet.Count; j++) {
-                    if (status.diffSheet[j].Any(a => a.Status != DiffStatus.Equal)) {
-                        int rowid = status.Diff2RowID1[j];
-                        if (tag == "dst") {
-                            rowid = status.Diff2RowID2[j];
-                        }
+                    int rowid = status.Diff2RowID1[j];
+                    if (tag == "dst") {
+                        rowid = status.Diff2RowID2[j];
+                    }
+
+                    // 修改过，或者是
+                    if (edited[rowid].Count > 0 || status.diffSheet[j].Any(a => a.Status != DiffStatus.Equal)) {
+       
 
                         var row = sheet.GetRow(rowid);
 
                         var data = new ExcelData();
-                        data.idx = row.RowNum;
+                        data.rowId = rowid;
                         data.tag = Tag as string;
                         data.diffstatus = status.diffSheet[j];
+                        data.diffIdx = j;
+                        data.CellEdited = edited[rowid];
 
                         for (int i = 0; i < columnCount; ++i) {
                             var cell = row.GetCell(i);
-                            data.data[headerStr[i]] = Util.GetCellValue(cell);
+                            data.data[headerStr[i]] = new CellData() { value = Util.GetCellValue(cell), cell = cell};
                         }
 
                         datas.Add(data);
@@ -296,7 +328,7 @@ namespace ExcelMerge {
                 var row = e.AddedItems[0] as ExcelData;
                 if (row != null) {
                     // 新行 NewRowItem 类
-                    MainWindow.instance.OnSelectGridRow(Tag as string, row.idx);
+                    MainWindow.instance.OnSelectGridRow(Tag as string, row.rowId);
                 }
             }
         }
@@ -314,7 +346,7 @@ namespace ExcelMerge {
             var param = (ExcelGridControl.ConverterParamter)parameter;
             if (value is ExcelData) {
                 var rowdata = (ExcelData)value;
-                var rowid = rowdata.idx;
+                var rowid = rowdata.rowId;
                 var coloumnid = param.columnID;
 
                 if (rowdata.diffstatus != null && rowdata.diffstatus.Count > coloumnid) {
@@ -334,6 +366,10 @@ namespace ExcelMerge {
                                 return Brushes.LightGreen;
                             break;
                         default:
+                            if (rowdata.CellEdited != null && rowdata.CellEdited.ContainsKey(coloumnid) && rowdata.CellEdited[coloumnid] == CellEditMode.Self) {
+                                // 单元格修改
+                                return new SolidColorBrush(Color.FromRgb(160,238,225));
+                            }
                             return DependencyProperty.UnsetValue;
                     }
                 }
