@@ -17,7 +17,6 @@ using NPOI.SS.UserModel;
 using System.Dynamic;
 using NetDiff;
 using System.IO;
-using System.Windows.Media;
 
 namespace ExcelMerge {
     /// <summary>
@@ -143,9 +142,7 @@ namespace ExcelMerge {
 
             var datas = new ObservableCollection<ExcelData>();
 
-            int MAX_RANGE_COUNT = 3;
 
-            int changedAnchorCount = 0;
             var rangeData = new List<ExcelData>();
             /*
             if (MainWindow.instance.diffSheetName != null) {
