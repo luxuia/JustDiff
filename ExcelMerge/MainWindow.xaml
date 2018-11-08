@@ -24,18 +24,15 @@
                 <Label Name="SrcFilePath" >c:/dir/to/path.xls</Label>
                 <ComboBox Name="SrcFileSheetsCombo" Width="80" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="SrcFileSheetsCombo_SelectionChanged"></ComboBox>
             </StackPanel>
-            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal">
-                <Label>
-                    SVN:
-                </Label>
-                <RadioButton GroupName="SVN" Content="Diff" Margin="5" IsChecked="True" Checked="RadioButton_Checked"/>
-                <RadioButton GroupName="SVN" Content="Merge" Margin="5" Checked="RadioButton_Checked"/>
-            </StackPanel>
+            <DockPanel  Grid.Row="1" Grid.Column="0">
+                <Label Content="{DynamicResource BranchPath}"/>
+                <TextBox Name="BranchPath" Height="20" HorizontalAlignment="Stretch" />
+            </DockPanel>
             <StackPanel Orientation="Horizontal">
-                <Label Content="Revision:"/>
-                <TextBox Name="SVNVerson" Width="100" Height="20" HorizontalContentAlignment="Right"/>
-                <Label Content="Select:"/>
-                <ComboBox Name="SVNRevisionCombo" Width="50" DisplayMemberPath="Revision" SelectedValuePath="ID" SelectionChanged="SVNResivionionList_SelectionChanged"/>
+                <Label Content="{DynamicResource ReversionId}"/>
+                <TextBox Name="SVNVerson" Width="60" Height="20" HorizontalContentAlignment="Right"/>
+                <Label Content="{DynamicResource ReversionSelect}"/>
+                <ComboBox Name="SVNRevisionCombo" Width="100" DisplayMemberPath="Revision" SelectedValuePath="ID" SelectionChanged="SVNResivionionList_SelectionChanged"/>
 
             </StackPanel>
         </StackPanel>
@@ -50,11 +47,13 @@
                 <ColumnDefinition Width="80"/>
             </Grid.ColumnDefinitions>
 
-            <Label Name="DstFilePath" Grid.Row="0" Grid.Column="0">c:/dir/to/path.xls</Label>
-            <ComboBox Name="DstFileSheetsCombo" Grid.Row="0" Grid.Column="1" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="DstFileSheetsCombo_SelectionChanged"></ComboBox>
+            <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.ColumnSpan="2">
+                <Label Name="DstFilePath" >c:/dir/to/path.xls</Label>
+                <ComboBox Name="DstFileSheetsCombo" IsReadOnly="True" DisplayMemberPath="Name" Width="80" SelectedValuePath="ID" SelectionChanged="DstFileSheetsCombo_SelectionChanged"></ComboBox>
+            </StackPanel>
             <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.ColumnSpan="2" Grid.Column="0">
-                <Button Name="DoDiff" Grid.Row="1" Grid.Column="1" Margin="10,10,10,10" Click="DoDiff_Click" Content="Diff" Width="50"/>
-                <Button Name="ApplyChange" Grid.Row="1" Grid.Column="1" Margin="10,10,10,10" Click="ApplyChange_Click" Content="Apply" Width="50"/>
+                <Button Name="DoDiff" Grid.Row="1" Grid.Column="1" Margin="10,10,10,10" Click="DoDiff_Click" Content="{DynamicResource DiffLabel}" Width="50"/>
+                <Button Name="ApplyChange" Grid.Row="1" Grid.Column="1" Margin="10,10,10,10" Click="ApplyChange_Click" Content="{DynamicResource ApplyLabel}" Width="50"/>
             </StackPanel>
 
         </Grid>
@@ -76,3 +75,4 @@
         <GridSplitter Grid.Row="1" Grid.Column="0" Background="Transparent" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5"/>
     </Grid>
 </Window>
+
