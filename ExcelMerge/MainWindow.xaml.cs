@@ -548,9 +548,12 @@ namespace ExcelMerge {
                 var selection = (e.AddedItems[0] as ComboBoxItem).Content as SheetNameCombo;
                 books["dst"].sheet = selection.ID;
                 
-                if (books.ContainsKey("src") && books["src"].sheet != selection.ID) {
-                    var idx = books["src"].ItemID2ComboIdx[selection.ID];
-                    SrcFileSheetsCombo.SelectedItem = books["src"].sheetCombo[idx];
+
+                if (books.ContainsKey("src") && books["src"].sheetname != books["dst"].sheetname) {
+                    var idx = books["src"].GetComboIDBySheetName(books["dst"].sheetname);
+                    if (idx >= 0) {
+                        SrcFileSheetsCombo.SelectedItem = books["src"].sheetCombo[idx];
+                    }
                 } else {
                     OnSheetChanged();
                 }
@@ -563,9 +566,11 @@ namespace ExcelMerge {
                 var selection = (e.AddedItems[0] as ComboBoxItem).Content as SheetNameCombo;
                 books["src"].sheet = selection.ID;
    
-                if (books.ContainsKey("dst") && books["dst"].sheet != selection.ID) {
-                    var idx = books["dst"].ItemID2ComboIdx[selection.ID];
-                    DstFileSheetsCombo.SelectedItem = books["dst"].sheetCombo[idx];
+                if (books.ContainsKey("dst") && books["src"].sheetname != books["dst"].sheetname) {
+                    var idx = books["dst"].GetComboIDBySheetName(books["src"].sheetname);
+                    if (idx >= 0) {
+                        DstFileSheetsCombo.SelectedItem = books["dst"].sheetCombo[idx];
+                    }
                 } else {
                     OnSheetChanged();
                 }

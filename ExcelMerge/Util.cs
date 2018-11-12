@@ -169,6 +169,14 @@ namespace ExcelMerge {
         public ISheet GetCurSheet() {
             return book.GetSheetAt(sheet);
         }
+
+        public string GetSheetNameByComboID(int index) {
+            return index < sheetNameCombos.Count ? sheetNameCombos[index].Name : null;
+        }
+
+        public int GetComboIDBySheetName(string name) {
+            return sheetNameCombos.FindIndex((a) => a.Name == name);
+        }
     }
 
     public enum FileOpenType {
