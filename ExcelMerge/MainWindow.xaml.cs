@@ -40,6 +40,8 @@ namespace ExcelMerge {
         public string SrcFile;
         public string DstFile;
 
+        public List<string> _tempFiles = new List<string>();
+
 
         public Mode mode = Mode.Diff;
 
@@ -49,7 +51,7 @@ namespace ExcelMerge {
             if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this)) {
                 return;
             }
-
+      
             instance = this;
         }
 
@@ -403,6 +405,9 @@ namespace ExcelMerge {
                 using (var fs = System.IO.File.Create(file2)) {
                     client.Write(uri, fs, checkoutArgs2);
                 }
+
+                _tempFiles.Add(file1);
+                _tempFiles.Add(file2);
                 Diff(file1, file2);
             }
         }
@@ -628,6 +633,14 @@ namespace ExcelMerge {
                 books["dst"].book.Write(dstfile);
 
                 dstfile.Flush();
+            }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+            foreach (var file in _tempFiles) {
+                if (File.Exists(file)) {
+                    File.Delete(file);
+                }
             }
         }
     }
