@@ -59,14 +59,14 @@ namespace ExcelMerge {
 
         }
 
-        
+        // load进来单个文件的情况
         public void OnFileLoaded(string file, string tag, FileOpenType type, int sheet = 0) {
 
             var wb = Util.GetWorkBook(file);
 
             books[tag] = new WorkBookWrap() { book = wb, sheet = sheet, file = file, filename = System.IO.Path.GetFileName(file) };
 
-            if (type == FileOpenType.Drag || type == FileOpenType.Menu) {
+            if (type == FileOpenType.Drag) {
                 if (tag == "src")
                     SrcFile = file;
                 else
@@ -161,18 +161,6 @@ namespace ExcelMerge {
                 }
                 SVNRevisionCombo.ItemsSource = revisions;
             }
-        }
-
-        List<ComboBoxItem> SetupSheetCombo(IWorkbook wb ) {
-            List<ComboBoxItem> list = new List<ComboBoxItem>();
-            SrcFileSheetsCombo.Items.Clear();
-            for (int i = 0; i < wb.NumberOfSheets; ++i) {
-                var item = new ComboBoxItem();
-                item.Content = new SheetNameCombo() { Name = wb.GetSheetName(i), ID = i };
-                SrcFileSheetsCombo.Items.Add(item);
-                list.Add(item);
-            }
-            return list;
         }
 
         WorkBookWrap InitWorkWrap(string file) {
@@ -287,7 +275,13 @@ namespace ExcelMerge {
         }
         
 
-        public void Diff(string file1, string file2) {
+        public void Diff(string file1, string file2, bool resetInitFile = true) {
+            if (string.IsNullOrEmpty(file1) || string.IsNullOrEmpty(file2)) return;
+
+            if (resetInitFile) {
+                SrcFile = file1;
+                DstFile = file2;
+            }
 
             string oldsheetName = null;
             if (books.ContainsKey("src")) {
@@ -295,8 +289,6 @@ namespace ExcelMerge {
             }
 
             var src = InitWorkWrap(file1);
-
-
             var dst = InitWorkWrap(file2);
 
 
@@ -385,6 +377,11 @@ namespace ExcelMerge {
             SrcDataGrid.RefreshData();
         }
 
+        int DiffStartIdx() {
+            // 首三行一起作为key
+            return SimpleHeader.IsChecked == true ? 3 : 0;
+        }
+
         void Diff(int revision, int revisionto) {
             using (SvnClient client = new SvnClient()) {
                 string file = SrcFile;
@@ -408,7 +405,7 @@ namespace ExcelMerge {
 
                 _tempFiles.Add(file1);
                 _tempFiles.Add(file2);
-                Diff(file1, file2);
+                Diff(file1, file2, false);
             }
         }
     
@@ -445,19 +442,32 @@ namespace ExcelMerge {
         List<string> GetHeaderStrList(ISheet sheet) {
             List<string> header = new List<string>();
 
-            var row0 = sheet.GetRow(0);
-            var row1 = sheet.GetRow(1);
-            var row2 = sheet.GetRow(2);
-            if (row0 == null || row1 == null || row2 == null) return null;
+            if (SimpleHeader.IsChecked == true) {
+                var row0 = sheet.GetRow(0);
+                var row1 = sheet.GetRow(1);
+                var row2 = sheet.GetRow(2);
+                if (row0 == null || row1 == null || row2 == null) return null;
 
-            for (int i = 0; i <row0.Cells.Count;++i) {
-                var s1 = Util.GetCellValue(row0.GetCell(i));
-                var s2 = Util.GetCellValue(row1.GetCell(i));
-                var s3 = Util.GetCellValue(row2.GetCell(i));
-                if (string.IsNullOrWhiteSpace(s1)) {
-                    return header;
+                for (int i = 0; i < row0.Cells.Count; ++i) {
+                    var s1 = Util.GetCellValue(row0.GetCell(i));
+                    var s2 = Util.GetCellValue(row1.GetCell(i));
+                    var s3 = Util.GetCellValue(row2.GetCell(i));
+                    if (string.IsNullOrWhiteSpace(s1)) {
+                        return header;
+                    }
+                    header.Add(string.Concat(s1, ":", s2, ":", s3));
                 }
-                header.Add(string.Concat(s1, ":", s2,":", s3 ));
+            } else {
+                var row0 = sheet.GetRow(0);
+                if (row0 == null ) return null;
+
+                for (int i = 0; i < row0.Cells.Count; ++i) {
+                    var s1 = Util.GetCellValue(row0.GetCell(i));
+                    if (string.IsNullOrWhiteSpace(s1)) {
+                        return header;
+                    }
+                    header.Add((i+1).ToString());
+                }
             }
             return header;
         }
@@ -469,7 +479,10 @@ namespace ExcelMerge {
 
             var nameHash = new HashSet<string>();
 
-            for (int i =3; ; i++) {
+            var startIdx = DiffStartIdx();
+
+            // 尝试找一个id不会重复的前几列的值作为key
+            for (int i = startIdx; ; i++) {
                 var row = sheet1.GetRow(i);
                 if (row == null || !Util.CheckValideRow(row)) {
                     books["src"].SheetValideRow[sheet1.SheetName] = i;
@@ -490,7 +503,7 @@ namespace ExcelMerge {
                 return a.Key.CompareTo(b.Key);
             });
             nameHash.Clear();
-            for (int i = 3; ; i++) {
+            for (int i = startIdx; ; i++) {
                 var row = sheet2.GetRow(i);
                 if (row == null || !Util.CheckValideRow(row)) {
                     books["dst"].SheetValideRow[sheet2.SheetName] = i;
@@ -642,6 +655,10 @@ namespace ExcelMerge {
                     File.Delete(file);
                 }
             }
+        }
+
+        private void SimpleHeader_Checked(object sender, RoutedEventArgs e) {
+            Diff(SrcFile, DstFile);
         }
     }
 

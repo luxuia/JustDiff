@@ -181,7 +181,6 @@ namespace ExcelMerge {
 
     public enum FileOpenType {
         Drag,
-        Menu,
         Prog, //因为diff等形式从程序内部打开的
     }
 

@@ -97,144 +97,109 @@ namespace ExcelMerge {
             var sheet = wb.GetSheetAt(wrap.sheet);
 
             ExcelGrid.Columns.Clear();
-            var columns = ExcelGrid.Columns;
-            var header = sheet.GetRow(2);
-            var headerkey = sheet.GetRow(1);
-            if (header == null || headerkey == null) return;
-
-            // header不会空
-            var columnCount = header.Cells.Count;
-            var headerStr = new string[columnCount];
-            for (int i = 0; i < columnCount; ++i) {
-                var cell = header.GetCell(i);
-                var cellkey = headerkey.GetCell(i);
-                
-                var str = Util.GetCellValue(cell);
-                var strkey = Util.GetCellValue(cellkey);
-  
-                if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(strkey) ) {
-                    columnCount = i;
-                    break;
-                }
-                var encodestr = System.Uri.EscapeDataString(strkey);
-
-                var column = new DataGridTextColumn();
-
-                column.Binding = new Binding(encodestr);// { Converter = new ConvertToBackground() };
-                column.Header = str;
-
-                Style aStyle = new Style(typeof(TextBlock));
-                //var abinding = new MultiBinding() { Converter = new ConvertToBackground() };
-                //abinding.Bindings.Add(new Binding(str) { ConverterParameter = "test" });
-                //abinding.Bindings.Add(new Binding() { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor) });
-                //abinding.Bindings.Add(new Binding());
-                var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = i, coloumnName = str } };
-
-                //abinding.RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor);
-                aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
-
-                column.ElementStyle = aStyle;
-
-                columns.Add(column);
-
-                headerStr[i] = encodestr;
-            }
 
             var datas = new ObservableCollection<ExcelData>();
 
-
-            var rangeData = new List<ExcelData>();
-            /*
             if (MainWindow.instance.diffSheetName != null) {
-                int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => tag == "src" ? a.Obj1!=null&& a.Obj1.ID == wrap.sheet : a.Obj2!=null&& a.Obj2.ID == wrap.sheet);
+                var columns = ExcelGrid.Columns;
 
-                var status = MainWindow.instance.sheetsDiff[sheetDiffidx];
+                // 不把diff结果转换为原来的顺序。因为隐藏相同行后，转换没有意义
 
-                for (int j = 0; ; j++) {
-                    var row = sheet.GetRow(j);
-                    if (row == null || !Util.CheckValideRow(row)) break;
-
-                    var data = new ExcelData();
-                    data.idx = row.RowNum;
-                    data.tag = Tag as string;
-
-                    var rowid2DiffMap = status.rowID2DiffMap1;
-                    if (tag == "dst") {
-                        rowid2DiffMap = status.rowID2DiffMap2;
-                    }
-                    
-                    if (j < 3) {
-                        data.diffstatus = status.diffHead;
-                        changedAnchorCount = 1;
-                    }else {
-
-                        if (rowid2DiffMap.ContainsKey(j+1)) {
-
-                        }
-
-                        data.diffstatus = status.diffSheet[rowid2DiffMap[j]];
-
-                        var changed = data.diffstatus.Any((a) => a.Status != DiffStatus.Equal);
-
-                        if (changed) {
-                            changedAnchorCount = MAX_RANGE_COUNT;
-                        }
-                        else {
-
-                        }
-                    }
-        
-                    for (int i = 0; i < columnCount; ++i) {
-                        var cell = row.GetCell(i);
-                        data.data[headerStr[i]] = Util.GetCellValue(cell);
-                    }
-                    if (changedAnchorCount > 0) {
-
-                        foreach (var i in rangeData) {
-                            datas.Add(i);
-                        }
-                        rangeData.Clear();
-
-                        datas.Add(data);
-                        changedAnchorCount--;
-                    }
-                    else {
-                        if (rangeData.Count > 2) {
-                            rangeData.RemoveAt(0);
-                        }
-                        rangeData.Add(data);
-                    }
-                }
-            }
-            */
-            // 不把diff结果转换为原来的顺序。因为隐藏相同行后，转换没有意义
-            if (MainWindow.instance.diffSheetName != null) {
                 int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => tag == "src" ? a.Obj1 != null && a.Obj1.ID == wrap.sheet : a.Obj2 != null && a.Obj2.ID == wrap.sheet);
 
                 var status = MainWindow.instance.sheetsDiff[sheetDiffidx];
 
-                // 头
-                for (int j = 0; j<3; j++) {
-                    var row = sheet.GetRow(j);
-                    if (row == null || !Util.CheckValideRow(row)) break;
 
-                    var data = new ExcelData();
-                    data.rowId = row.RowNum;
-                    data.tag = Tag as string;
-                    data.diffIdx = j;
+                // header不会空
+                var columnCount = status.columnCount;
+                var headerStr = new string[columnCount];
 
-                    var rowid2DiffMap = status.rowID2DiffMap1;
-                    if (tag == "dst") {
-                        rowid2DiffMap = status.rowID2DiffMap2;
-                    }
-                    data.diffstatus = status.diffHead;
+                var needChangeHead = MainWindow.instance.SimpleHeader.IsChecked == true;
+                if (needChangeHead) {
+                    var header = sheet.GetRow(2);
+                    var headerkey = sheet.GetRow(1);
+                    if (header == null || headerkey == null) return;
 
+                    // header不会空
+//                     columnCount = header.Cells.Count;
+//                     headerStr = new string[columnCount];
                     for (int i = 0; i < columnCount; ++i) {
-                        var cell = row.GetCell(i);
-                        data.data[headerStr[i]] = new CellData() { value = Util.GetCellValue(cell), cell = cell };
-                    }
+                        var cell = header.GetCell(i);
+                        var cellkey = headerkey.GetCell(i);
 
-                    datas.Add(data);
+                        var str = Util.GetCellValue(cell);
+                        var strkey = Util.GetCellValue(cellkey);
+
+                        if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(strkey)) {
+                            columnCount = i;
+                            break;
+                        }
+                        var encodestr = System.Uri.EscapeDataString(strkey);
+
+                        var column = new DataGridTextColumn();
+
+                        column.Binding = new Binding(encodestr);
+                        column.Header = str;
+
+                        Style aStyle = new Style(typeof(TextBlock));
+
+                        var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = i, coloumnName = str } };
+
+                        aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
+
+                        column.ElementStyle = aStyle;
+
+                        columns.Add(column);
+
+                        headerStr[i] = encodestr;
+                    }
+                }
+                else {
+                    for (int i = 0; i < columnCount; ++i) {
+                        var str = (i + 1).ToString();
+                        // 新建一列
+                        var column = new DataGridTextColumn();
+                        column.Binding = new Binding(str);
+                        column.Header = str;
+
+                        Style aStyle = new Style(typeof(TextBlock));
+                        // 传下去的参数，当渲染格子的时候，只知道行id，需要通过这里传参数知道列id
+                        var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = i, coloumnName = str } };
+
+                        aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
+
+                        column.ElementStyle = aStyle;
+
+                        columns.Add(column);
+
+                        headerStr[i] = str;
+                    }
+                }
+
+                if (needChangeHead) {
+                    // 头
+                    for (int j = 0; j < 3; j++) {
+                        var row = sheet.GetRow(j);
+                        if (row == null || !Util.CheckValideRow(row)) break;
+
+                        var data = new ExcelData();
+                        data.rowId = row.RowNum;
+                        data.tag = Tag as string;
+                        data.diffIdx = j;
+
+                        var rowid2DiffMap = status.rowID2DiffMap1;
+                        if (tag == "dst") {
+                            rowid2DiffMap = status.rowID2DiffMap2;
+                        }
+                        data.diffstatus = status.diffHead;
+
+                        for (int i = 0; i < columnCount; ++i) {
+                            var cell = row.GetCell(i);
+                            data.data[headerStr[i]] = new CellData() { value = Util.GetCellValue(cell), cell = cell };
+                        }
+
+                        datas.Add(data);
+                    }
                 }
 
                 Dictionary<int, Dictionary<int, CellEditMode>> edited;

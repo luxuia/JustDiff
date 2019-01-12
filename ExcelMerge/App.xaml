@@ -10,5 +10,6 @@
         <System:String x:Key="ReversionSelect">版本选择:</System:String>
         <System:String x:Key="DiffLabel">对比</System:String>
         <System:String x:Key="ApplyLabel">保存</System:String>
+        <System:String x:Key="SimpleHeaderLabel">处理表头</System:String>
     </Application.Resources>
 </Application>
