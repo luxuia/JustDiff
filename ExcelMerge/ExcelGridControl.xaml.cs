@@ -140,7 +140,8 @@ namespace ExcelMerge {
                             columnCount = i;
                             break;
                         }
-                        var encodestr = System.Uri.EscapeDataString(strkey);
+                        // 第二行+第三行，合起来作为key
+                        var encodestr = System.Uri.EscapeDataString(strkey) + "_" + i;// + System.Uri.EscapeDataString(str);
 
                         var column = new DataGridTextColumn();
 

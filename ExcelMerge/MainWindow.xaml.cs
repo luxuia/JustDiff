@@ -482,7 +482,7 @@ namespace ExcelMerge {
         }
 
         // 把第一列认为是id列，检查增删, <value, 行id>
-        List<DiffResult<string2int>> GetIDDiffList(ISheet sheet1, ISheet sheet2, int checkCellCount) {
+        List<DiffResult<string2int>> GetIDDiffList(ISheet sheet1, ISheet sheet2, int checkCellCount, bool addRowID = false) {
             var list1 = new List<string2int>();
             var list2 = new List<string2int>();
 
@@ -502,14 +502,30 @@ namespace ExcelMerge {
                 for (var j = 0; j < checkCellCount; ++j) {
                     val += Util.GetCellValue(row.GetCell(j));
                 }
-                if (nameHash.Contains(val) && checkCellCount < 6) return GetIDDiffList(sheet1, sheet2, checkCellCount + 1);
-                nameHash.Add(val);
+                var hash_val = val;
+                if (addRowID) {
+                    hash_val = hash_val + "." + i;
+                }
+                if (nameHash.Contains(hash_val)) {
+                    if (checkCellCount < 6) {
+                        return GetIDDiffList(sheet1, sheet2, checkCellCount + 1, addRowID);
+                    } else {
+                        // 已经找不到能作为key的了。把id和行号连一块
+                        return GetIDDiffList(sheet1, sheet2, 1, true);
+                    }
+                } 
+
+                nameHash.Add(hash_val);
 
                 list1.Add(new string2int(val, i));
             }
            list1.Sort(delegate (string2int a, string2int b) {
-                return a.Key.CompareTo(b.Key);
-            });
+               var cmp = a.Key.CompareTo(b.Key);
+               if (cmp == 0) {
+                   return a.Value.CompareTo(b.Value);
+               }
+               return cmp;
+           });
             nameHash.Clear();
             for (int i = startIdx; ; i++) {
                 var row = sheet2.GetRow(i);
@@ -521,14 +537,29 @@ namespace ExcelMerge {
                 for (var j = 0; j < checkCellCount; ++j) {
                     val += Util.GetCellValue(row.GetCell(j));
                 }
-
-                if (nameHash.Contains(val) && checkCellCount < 6) return GetIDDiffList(sheet1, sheet2, checkCellCount + 1);
-                nameHash.Add(val);
+                var hash_val = val;
+                if (addRowID) {
+                    hash_val = hash_val + "." + i;
+                }
+                if (nameHash.Contains(hash_val)) {
+                    if (checkCellCount < 6) {
+                        return GetIDDiffList(sheet1, sheet2, checkCellCount + 1, addRowID);
+                    }
+                    else {
+                        // 已经找不到能作为key的了。把id和行号连一块
+                        return GetIDDiffList(sheet1, sheet2, 1, true);
+                    }
+                }
+                nameHash.Add(hash_val);
 
                 list2.Add(new string2int(val, i));
             }
             list2.Sort(delegate (string2int a, string2int b) {
-                return a.Key.CompareTo(b.Key);
+                var cmp = a.Key.CompareTo(b.Key);
+                if (cmp == 0) {
+                    return a.Value.CompareTo(b.Value);
+                }
+                return cmp;
             });
 
             var option = new DiffOption<string2int>();
