@@ -209,7 +209,7 @@ namespace ExcelMerge {
 
             status.diffHead = optimized.ToList();
 
-            status.columnCount = status.diffHead.Count;
+            status.columnCount =  status.diffHead.Count;
             
             status.diffFistColumn = GetIDDiffList(src, dst, 1);
 
@@ -299,9 +299,12 @@ namespace ExcelMerge {
 
             books["src"] = src;
             books["dst"] = dst;
+            var srcSheetID = -1;
+            var dstSheetID = -1;
 
             for (int i = 0; i < diffSheetName.Count; ++i) {
                 var sheetname = diffSheetName[i];
+
                 // 只有sheet名字一样的可以diff， 先这么处理
                 if (sheetname.Status == DiffStatus.Equal) {
                     var sheet1 = sheetname.Obj1.ID;
@@ -309,18 +312,24 @@ namespace ExcelMerge {
                     
                     sheetsDiff[i] = DiffSheet(src.book.GetSheetAt(sheet1), dst.book.GetSheetAt(sheet2));
 
-                    if (sheetsDiff[i] != null && sheetsDiff[i].changed) {
+                    if (sheetsDiff[i] != null) {
                         oldsheetName = sheetname.Obj1.Name;
                         var sheetidx = 0;
                         if (!string.IsNullOrEmpty(oldsheetName)) {
                             sheetidx = src.book.GetSheetIndex(oldsheetName);
                         }
-                        src.sheet = sheetidx;
+                        if (sheetsDiff[i].changed || srcSheetID == -1) {
+                            src.sheet = sheetidx;
+                            srcSheetID = sheetidx;
+                        }
 
                         if (!string.IsNullOrEmpty(oldsheetName)) {
                             sheetidx = dst.book.GetSheetIndex(oldsheetName);
                         }
-                        dst.sheet = sheetidx;
+                        if (sheetsDiff[i].changed || dstSheetID == -1) {
+                            dst.sheet = sheetidx;
+                            dstSheetID = sheetidx;
+                        }
                     }
                 }
             }
@@ -493,7 +502,6 @@ namespace ExcelMerge {
                 for (var j = 0; j < checkCellCount; ++j) {
                     val += Util.GetCellValue(row.GetCell(j));
                 }
-
                 if (nameHash.Contains(val) && checkCellCount < 6) return GetIDDiffList(sheet1, sheet2, checkCellCount + 1);
                 nameHash.Add(val);
 

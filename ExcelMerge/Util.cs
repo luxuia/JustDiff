@@ -210,6 +210,8 @@ namespace ExcelMerge {
         public Dictionary<int, Dictionary<int, CellEditMode>> RowEdited1;
         public Dictionary<int, Dictionary<int, CellEditMode>> RowEdited2;
 
+        public HashSet<int> ignoreRow1;
+        public HashSet<int> ignoreRow2;
 
         public bool changed;
     }

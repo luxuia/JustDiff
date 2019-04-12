@@ -107,8 +107,14 @@ namespace ExcelMerge {
 
                 int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => tag == "src" ? a.Obj1 != null && a.Obj1.ID == wrap.sheet : a.Obj2 != null && a.Obj2.ID == wrap.sheet);
 
+                if (!MainWindow.instance.sheetsDiff.ContainsKey(sheetDiffidx)) { 
+                    ExcelGrid.DataContext = datas;
+                    return;
+                }
                 var status = MainWindow.instance.sheetsDiff[sheetDiffidx];
 
+                // 没有比较数据的sheet
+                if (status == null) return;
 
                 // header不会空
                 var columnCount = status.columnCount;
