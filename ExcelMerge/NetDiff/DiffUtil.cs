@@ -19,7 +19,7 @@ namespace NetDiff
             var editGrap = new EditGraph<T>(seq1, seq2);
             var waypoints = editGrap.CalculatePath(option);
 
-            return MakeResults<T>(waypoints, seq1, seq2);
+            return MakeResults<T>(waypoints, seq1, seq2, option);
         }
 
         public static IEnumerable<T> CreateSrc<T>(IEnumerable<DiffResult<T>> diffResults)
@@ -102,19 +102,20 @@ namespace NetDiff
             */
         }
 
-        private static IEnumerable<DiffResult<T>> MakeResults<T>(IEnumerable<Point> waypoints, IEnumerable<T> seq1, IEnumerable<T> seq2)
+        private static IEnumerable<DiffResult<T>> MakeResults<T>(IEnumerable<Point> waypoints, IEnumerable<T> seq1, IEnumerable<T> seq2, DiffOption<T> option)
         {
             var array1 = seq1.ToArray();
             var array2 = seq2.ToArray();
 
             foreach (var pair in waypoints.MakePairsWithNext())
             {
-                var status = GetStatus(pair.Item1, pair.Item2);
+                var status = GetStatus(pair.Item1, pair.Item2, ref array1, ref array2, option);
                 T obj1 = default(T);
                 T obj2 = default(T);
                 switch (status)
                 {
                     case DiffStatus.Equal:
+                    case DiffStatus.Modified:
                         obj1 = array1[pair.Item2.X - 1];
                         obj2 = array2[pair.Item2.Y - 1];
                         break;
@@ -130,10 +131,18 @@ namespace NetDiff
             }
         }
 
-        private static DiffStatus GetStatus(Point current, Point prev)
+        private static DiffStatus GetStatus<T>(Point current, Point prev, ref T[] array1, ref T[] array2, DiffOption<T> option)
         {
-            if (current.X != prev.X && current.Y != prev.Y)
-                return DiffStatus.Equal;
+            if (current.X != prev.X && current.Y != prev.Y) {
+                var equal = option.EqualityComparer != null ? option.EqualityComparer.Equals(array1[prev.X - 1], (array2[prev.Y - 1])) : array1[prev.X - 1].Equals(array2[prev.Y - 1]);
+
+                if (equal) {
+                    return DiffStatus.Equal;
+                }
+                else {
+                    return DiffStatus.Modified;
+                }
+            }
             else if (current.X != prev.X)
                 return DiffStatus.Deleted;
             else if (current.Y != prev.Y)

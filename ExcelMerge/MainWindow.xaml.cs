@@ -157,6 +157,9 @@ namespace ExcelMerge {
 
                             revisions.Add(new SvnRevisionCombo() { Revision = string.Format("{0}[{1}]", author, message), ID = (int)logentry.Revision });
                         }
+                        revisions.Sort((a, b) => {
+                            return b.ID - a.ID;
+                        });
                     }
                 }
                 SVNRevisionCombo.ItemsSource = revisions;
