@@ -171,14 +171,16 @@ namespace NetDiff
                     updated.Add(bottomHead);
                 }
 
-                var diag = GetPoint(head.Point, Direction.Diagonal);
-                if (InRange(diag)) {
-                    var newHead = new Node(diag);
-                    newHead.Parent = head;
+                if (option.Optimize) {
+                    var diag = GetPoint(head.Point, Direction.Diagonal);
+                    if (InRange(diag)) {
+                        var newHead = new Node(diag);
+                        newHead.Parent = head;
 
-                    isEnd |= newHead.Point.Equals(endpoint);
+                        isEnd |= newHead.Point.Equals(endpoint);
 
-                    updated.Add(newHead);
+                        updated.Add(newHead);
+                    }
                 }
             }
 

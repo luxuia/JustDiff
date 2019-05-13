@@ -566,6 +566,7 @@ namespace ExcelMerge {
             });
 
             var option = new DiffOption<string2int>();
+            option.Optimize = false;
             option.EqualityComparer = new SheetIDComparer();
             var result = DiffUtil.Diff(list1, list2, option);
             var optimize = DiffUtil.OptimizeCaseDeletedFirst(result);
