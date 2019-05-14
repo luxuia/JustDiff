@@ -122,7 +122,9 @@ namespace ExcelMerge {
 
                 var needChangeHead = MainWindow.instance.SimpleHeader.IsChecked == true;
                 if (needChangeHead) {
-                    var header = sheet.GetRow(2);
+                    var header = sheet.GetRow(5);
+                    var header2 = sheet.GetRow(6);
+
                     var headerkey = sheet.GetRow(1);
                     if (header == null || headerkey == null) return;
 
@@ -131,10 +133,15 @@ namespace ExcelMerge {
 //                     headerStr = new string[columnCount];
                     for (int i = 0; i < columnCount; ++i) {
                         var cell = header.GetCell(i);
+                        var cell2 = header2.GetCell(i);
                         var cellkey = headerkey.GetCell(i);
 
                         var str = Util.GetCellValue(cell);
+                        var str2 = Util.GetCellValue(cell2);
+
                         var strkey = Util.GetCellValue(cellkey);
+
+                        str = string.IsNullOrWhiteSpace(str) ? str2 : str;
 
                         if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(strkey)) {
                             columnCount = i;
@@ -185,7 +192,7 @@ namespace ExcelMerge {
 
                 if (needChangeHead) {
                     // 头
-                    for (int j = 0; j < 3; j++) {
+                    for (int j = 0; j < MainWindow.instance.DiffStartIdx(); j++) {
                         var row = sheet.GetRow(j);
                         if (row == null || !Util.CheckValideRow(row)) break;
 

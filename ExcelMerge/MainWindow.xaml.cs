@@ -389,9 +389,9 @@ namespace ExcelMerge {
             SrcDataGrid.RefreshData();
         }
 
-        int DiffStartIdx() {
+        public int DiffStartIdx() {
             // 首三行一起作为key
-            return SimpleHeader.IsChecked == true ? 3 : 0;
+            return SimpleHeader.IsChecked == true ? 6 : 0;
         }
 
         void Diff(int revision, int revisionto) {
@@ -455,19 +455,24 @@ namespace ExcelMerge {
             List<string> header = new List<string>();
 
             if (SimpleHeader.IsChecked == true) {
-                var row0 = sheet.GetRow(0);
-                var row1 = sheet.GetRow(1);
-                var row2 = sheet.GetRow(2);
-                if (row0 == null || row1 == null || row2 == null) return null;
-
-                for (int i = 0; i < row0.Cells.Count; ++i) {
-                    var s1 = Util.GetCellValue(row0.GetCell(i));
-                    var s2 = Util.GetCellValue(row1.GetCell(i));
-                    var s3 = Util.GetCellValue(row2.GetCell(i));
-                    if (string.IsNullOrWhiteSpace(s1)) {
-                        return header;
+                var list = new List<IRow>();
+                for (int i = 0; i < DiffStartIdx(); ++i) {
+                    var row = sheet.GetRow(i);
+                    if (row == null) return null;
+                    list.Add(row);
+                }
+                
+                for (int i = 0; i < list[0].Cells.Count; ++i) {
+                    var str = "";
+                    for (int j = 0; j < DiffStartIdx(); ++j) {
+                        var cell_s = Util.GetCellValue(list[j].GetCell(i));
+                        if (j == 0 && string.IsNullOrWhiteSpace(cell_s)) {
+                            return header;
+                        }
+                        str = str + (j > 0 ? ":" + cell_s : cell_s);
                     }
-                    header.Add(string.Concat(s1, ":", s2, ":", s3));
+                   
+                    header.Add(str);
                 }
             } else {
                 var row0 = sheet.GetRow(0);
