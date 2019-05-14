@@ -250,7 +250,7 @@ namespace ExcelMerge {
             var item = new MenuItem();
             item.Header = "复制到" + (isSrc ? "右侧" : "左侧");
             item.Click += Menu_CopyToSide;
-            CtxMenu.Items.Add(item);
+            //CtxMenu.Items.Add(item);
         }
 
         public void HandleFileOpen(string file, FileOpenType type, string tag) {

@@ -54,7 +54,9 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.ColumnSpan="2" Grid.Column="0">
                 <Button Name="DoDiff" Grid.Row="1" Grid.Column="1" Margin="10,10,10,10" Click="DoDiff_Click" Content="{DynamicResource DiffLabel}" Width="50"/>
+               <!--
                 <Button Name="ApplyChange" Grid.Row="1" Grid.Column="1" Margin="10,10,10,10" Click="ApplyChange_Click" Content="{DynamicResource ApplyLabel}" Width="50"/>
+                -->
                 <CheckBox Name="SimpleHeader" Grid.Row="1" Grid.Column="1" Margin="10,10,10,27" Width="69" Click="SimpleHeader_Checked" Content="{DynamicResource SimpleHeaderLabel}" IsChecked="True" />
             </StackPanel>
 
