@@ -123,6 +123,7 @@ namespace ExcelMerge {
                 var needChangeHead = MainWindow.instance.SimpleHeader.IsChecked == true;
                 if (needChangeHead) {
                     var header = sheet.GetRow(2);
+
                     var headerkey = sheet.GetRow(1);
                     if (header == null || headerkey == null) return;
 
@@ -185,7 +186,7 @@ namespace ExcelMerge {
 
                 if (needChangeHead) {
                     // 头
-                    for (int j = 0; j < 3; j++) {
+                    for (int j = 0; j < MainWindow.instance.DiffStartIdx(); j++) {
                         var row = sheet.GetRow(j);
                         if (row == null || !Util.CheckValideRow(row)) break;
 
