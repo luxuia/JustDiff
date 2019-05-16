@@ -122,8 +122,8 @@ namespace ExcelMerge {
 
                 var needChangeHead = MainWindow.instance.SimpleHeader.IsChecked == true;
                 if (needChangeHead) {
-                    var header = sheet.GetRow(5);
-                    var header2 = sheet.GetRow(6);
+                    var header = sheet.GetRow(4);
+                    var header2 = sheet.GetRow(5);
 
                     var headerkey = sheet.GetRow(1);
                     if (header == null || headerkey == null) return;
