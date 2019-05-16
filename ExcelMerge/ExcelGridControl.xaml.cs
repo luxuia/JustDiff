@@ -117,7 +117,7 @@ namespace ExcelMerge {
                 if (status == null) return;
 
                 // header不会空
-                var columnCount = status.columnCount;
+                var columnCount = tag == "src" ? status.columnCount1 : status.columnCount2;
                 var headerStr = new string[columnCount];
 
                 var needChangeHead = MainWindow.instance.SimpleHeader.IsChecked == true;

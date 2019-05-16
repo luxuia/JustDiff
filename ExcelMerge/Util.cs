@@ -195,7 +195,8 @@ namespace ExcelMerge {
     }
 
     public class SheetDiffStatus {
-        public int columnCount;
+        public int columnCount1;
+        public int columnCount2;
         public List<DiffResult<string>> diffHead;
         public List<DiffResult<string2int>> diffFistColumn;
 
