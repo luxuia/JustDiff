@@ -62,11 +62,12 @@ namespace ExcelMerge {
             }
 
 
-            if (!File.Exists(ConfigPath)) {
+            var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, ConfigPath);
+            if (!File.Exists(path)) {
                 config = new Config();
-                File.WriteAllText(ConfigPath, JsonConvert.SerializeObject(config));
+                File.WriteAllText(path, JsonConvert.SerializeObject(config));
             } else {
-                config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(ConfigPath));
+                config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
             }
             instance = this;
         }

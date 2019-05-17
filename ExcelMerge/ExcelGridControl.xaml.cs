@@ -90,6 +90,28 @@ namespace ExcelMerge {
             public int columnID;
             public string coloumnName;
         }
+
+        void AddPrefixRowID() {
+            var columns = ExcelGrid.Columns;
+
+            {
+                var column = new DataGridTextColumn();
+
+                column.Binding = new Binding("rowid");
+                column.Header = "行";
+
+                Style aStyle = new Style(typeof(TextBlock));
+
+                var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = -1, coloumnName = "行" } };
+
+                aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
+
+                column.ElementStyle = aStyle;
+
+                columns.Add(column);
+            }
+        }
+
         public void RefreshData() {
             var tag = Tag as string;
             var wrap = MainWindow.instance.books[tag];
@@ -128,8 +150,10 @@ namespace ExcelMerge {
                     if (header == null || headerkey == null) return;
 
                     // header不会空
-//                     columnCount = header.Cells.Count;
-//                     headerStr = new string[columnCount];
+                    //                     columnCount = header.Cells.Count;
+                    //                     headerStr = new string[columnCount];
+                    AddPrefixRowID();
+
                     for (int i = 0; i < columnCount; ++i) {
                         var cell = header.GetCell(i);
                         var cellkey = headerkey.GetCell(i);
@@ -163,6 +187,9 @@ namespace ExcelMerge {
                     }
                 }
                 else {
+
+                    AddPrefixRowID();
+
                     for (int i = 0; i < columnCount; ++i) {
                         var str = (i + 1).ToString();
                         // 新建一列
@@ -235,6 +262,7 @@ namespace ExcelMerge {
                         data.diffIdx = j;
                         data.CellEdited = edited[rowid];
 
+                        data.data["rowid"] = new CellData() { value = (rowid+1).ToString() };
                         for (int i = 0; i < columnCount; ++i) {
                             var cell = row.GetCell(i);
                             data.data[headerStr[i]] = new CellData() { value = Util.GetCellValue(cell), cell = cell};
@@ -319,7 +347,7 @@ namespace ExcelMerge {
                 var rowid = rowdata.rowId;
                 var coloumnid = param.columnID;
 
-                if (rowdata.diffstatus != null && rowdata.diffstatus.Count > coloumnid) {
+                if (rowdata.diffstatus != null && rowdata.diffstatus.Count > coloumnid && coloumnid >= 0) {
                     DiffStatus status = rowdata.diffstatus[coloumnid].Status;
 
                     switch (status) {
