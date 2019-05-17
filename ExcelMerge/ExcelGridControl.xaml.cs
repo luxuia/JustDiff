@@ -152,7 +152,7 @@ namespace ExcelMerge {
                     // header不会空
                     //                     columnCount = header.Cells.Count;
                     //                     headerStr = new string[columnCount];
-                    AddPrefixRowID();
+                    //AddPrefixRowID();
 
                     for (int i = 0; i < columnCount; ++i) {
                         var cell = header.GetCell(i);
@@ -188,7 +188,7 @@ namespace ExcelMerge {
                 }
                 else {
 
-                    AddPrefixRowID();
+                    //AddPrefixRowID();
 
                     for (int i = 0; i < columnCount; ++i) {
                         var str = (i + 1).ToString();
@@ -310,7 +310,13 @@ namespace ExcelMerge {
 
         private void ExcelGrid_LoadingRow(object sender, DataGridRowEventArgs e) {
             var row = e.Row;
-            var item = row.Item;
+            var index = row.GetIndex();
+            var item = row.Item as ExcelData;
+
+            if (item != null) { 
+                row.Header = (item.rowId+1).ToString();
+            }
+            //row.Header = ite
         }
 
         private void ExcelGrid_ScrollChanged(object sender, ScrollChangedEventArgs e) {

@@ -19,7 +19,7 @@
         <Grid Grid.Row="0" Grid.Column="0" SizeChanged="ExcelGridResized">
             <DataGrid x:Name="ExcelGrid" ItemsSource="{Binding}" AutoGenerateColumns="False" 
                       AllowDrop="True" Drop="ExcelGrid_Drop" LoadingRow="ExcelGrid_LoadingRow"  SelectionUnit="CellOrRowHeader"
-                    RowHeaderWidth="10"
+
                         ScrollViewer.ScrollChanged ="ExcelGrid_ScrollChanged" SelectionChanged="ExcelGrid_SelectionChanged" SelectedCellsChanged="ExcelGrid_SelectedCellsChanged">
                 <DataGrid.ContextMenu>
                     <ContextMenu Name="CtxMenu">
