@@ -20,6 +20,7 @@ using System.Collections.ObjectModel;
 using NetDiff;
 using string2int = System.Collections.Generic.KeyValuePair<string, int>;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace ExcelMerge {
  
@@ -45,13 +46,28 @@ namespace ExcelMerge {
 
         public Mode mode = Mode.Diff;
 
+        public class Config {
+            public List<string> NoHeadPaths = new List<string>();
+        }
+
+        static string ConfigPath = "config.json";
+
+        public Config config;
+
         public MainWindow() {
             InitializeComponent();
 
             if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this)) {
                 return;
             }
-      
+
+
+            if (!File.Exists(ConfigPath)) {
+                config = new Config();
+                File.WriteAllText(ConfigPath, JsonConvert.SerializeObject(config));
+            } else {
+                config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(ConfigPath));
+            }
             instance = this;
         }
 
@@ -61,6 +77,12 @@ namespace ExcelMerge {
 
         // load进来单个文件的情况
         public void OnFileLoaded(string file, string tag, FileOpenType type, int sheet = 0) {
+            file = file.Replace("\\", "/");
+            foreach (var reg in config.NoHeadPaths) {
+                if (System.Text.RegularExpressions.Regex.Match(file, reg).Length > 0) {
+                    ProcessHeader.IsChecked = false;
+                }
+            }
 
             var wb = Util.GetWorkBook(file);
 
@@ -392,7 +414,7 @@ namespace ExcelMerge {
 
         public int DiffStartIdx() {
             // 首三行一起作为key
-            return SimpleHeader.IsChecked == true ? 3 : 0;
+            return ProcessHeader.IsChecked == true ? 3 : 0;
         }
 
         void Diff(int revision, int revisionto) {
@@ -455,7 +477,7 @@ namespace ExcelMerge {
         List<string> GetHeaderStrList(ISheet sheet) {
             List<string> header = new List<string>();
 
-            if (SimpleHeader.IsChecked == true) {
+            if (ProcessHeader.IsChecked == true) {
                 var list = new List<IRow>();
                 for (int i = 0; i < DiffStartIdx(); ++i) {
                     var row = sheet.GetRow(i);

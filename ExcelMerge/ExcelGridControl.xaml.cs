@@ -120,7 +120,7 @@ namespace ExcelMerge {
                 var columnCount = tag == "src" ? status.columnCount1 : status.columnCount2;
                 var headerStr = new string[columnCount];
 
-                var needChangeHead = MainWindow.instance.SimpleHeader.IsChecked == true;
+                var needChangeHead = MainWindow.instance.ProcessHeader.IsChecked == true;
                 if (needChangeHead) {
                     var header = sheet.GetRow(2);
 
