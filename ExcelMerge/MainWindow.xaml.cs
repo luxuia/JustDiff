@@ -439,7 +439,7 @@ namespace ExcelMerge {
 
         public int DiffStartIdx() {
             // 首三行一起作为key
-            return SimpleHeader.IsChecked == true ? 6 : 0;
+            return ProcessHeader.IsChecked == true ? 6 : 0;
         }
 
         void Diff(int revision, int revisionto) {
