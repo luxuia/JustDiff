@@ -502,11 +502,7 @@ namespace ExcelMerge {
         List<string> GetHeaderStrList(ISheet sheet) {
             List<string> header = new List<string>();
 
-<<<<<<< HEAD
-            if (SimpleHeader.IsChecked == true) {
-=======
             if (ProcessHeader.IsChecked == true) {
->>>>>>> master
                 var list = new List<IRow>();
                 for (int i = 0; i < DiffStartIdx(); ++i) {
                     var row = sheet.GetRow(i);
