@@ -90,6 +90,28 @@ namespace ExcelMerge {
             public int columnID;
             public string coloumnName;
         }
+
+        void AddPrefixRowID() {
+            var columns = ExcelGrid.Columns;
+
+            {
+                var column = new DataGridTextColumn();
+
+                column.Binding = new Binding("rowid");
+                column.Header = "行";
+
+                Style aStyle = new Style(typeof(TextBlock));
+
+                var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = -1, coloumnName = "行" } };
+
+                aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
+
+                column.ElementStyle = aStyle;
+
+                columns.Add(column);
+            }
+        }
+
         public void RefreshData() {
             var tag = Tag as string;
             var wrap = MainWindow.instance.books[tag];
@@ -117,10 +139,10 @@ namespace ExcelMerge {
                 if (status == null) return;
 
                 // header不会空
-                var columnCount = status.columnCount;
+                var columnCount = tag == "src" ? status.columnCount1 : status.columnCount2;
                 var headerStr = new string[columnCount];
 
-                var needChangeHead = MainWindow.instance.SimpleHeader.IsChecked == true;
+                var needChangeHead = MainWindow.instance.ProcessHeader.IsChecked == true;
                 if (needChangeHead) {
                     var header = sheet.GetRow(4);
                     var header2 = sheet.GetRow(5);
@@ -129,8 +151,10 @@ namespace ExcelMerge {
                     if (header == null || headerkey == null) return;
 
                     // header不会空
-//                     columnCount = header.Cells.Count;
-//                     headerStr = new string[columnCount];
+                    //                     columnCount = header.Cells.Count;
+                    //                     headerStr = new string[columnCount];
+                    //AddPrefixRowID();
+
                     for (int i = 0; i < columnCount; ++i) {
                         var cell = header.GetCell(i);
                         var cell2 = header2.GetCell(i);
@@ -169,6 +193,9 @@ namespace ExcelMerge {
                     }
                 }
                 else {
+
+                    //AddPrefixRowID();
+
                     for (int i = 0; i < columnCount; ++i) {
                         var str = (i + 1).ToString();
                         // 新建一列
@@ -201,10 +228,7 @@ namespace ExcelMerge {
                         data.tag = Tag as string;
                         data.diffIdx = j;
 
-                        var rowid2DiffMap = status.rowID2DiffMap1;
-                        if (tag == "dst") {
-                            rowid2DiffMap = status.rowID2DiffMap2;
-                        }
+                        data.column2diff = tag == "src" ? status.column2diff1[0] : status.column2diff2[0];
                         data.diffstatus = status.diffHead;
 
                         for (int i = 0; i < columnCount; ++i) {
@@ -240,7 +264,9 @@ namespace ExcelMerge {
                         data.diffstatus = status.diffSheet[j];
                         data.diffIdx = j;
                         data.CellEdited = edited[rowid];
+                        data.column2diff =  tag == "src" ? status.column2diff1[rowid] : status.column2diff2[rowid];
 
+                        data.data["rowid"] = new CellData() { value = (rowid+1).ToString() };
                         for (int i = 0; i < columnCount; ++i) {
                             var cell = row.GetCell(i);
                             data.data[headerStr[i]] = new CellData() { value = Util.GetCellValue(cell), cell = cell};
@@ -257,7 +283,7 @@ namespace ExcelMerge {
             var item = new MenuItem();
             item.Header = "复制到" + (isSrc ? "右侧" : "左侧");
             item.Click += Menu_CopyToSide;
-            //CtxMenu.Items.Add(item);
+            CtxMenu.Items.Add(item);
         }
 
         public void HandleFileOpen(string file, FileOpenType type, string tag) {
@@ -288,7 +314,13 @@ namespace ExcelMerge {
 
         private void ExcelGrid_LoadingRow(object sender, DataGridRowEventArgs e) {
             var row = e.Row;
-            var item = row.Item;
+            var index = row.GetIndex();
+            var item = row.Item as ExcelData;
+
+            if (item != null) { 
+                row.Header = (item.rowId+1).ToString();
+            }
+            //row.Header = ite
         }
 
         private void ExcelGrid_ScrollChanged(object sender, ScrollChangedEventArgs e) {
@@ -325,8 +357,10 @@ namespace ExcelMerge {
                 var rowid = rowdata.rowId;
                 var coloumnid = param.columnID;
 
-                if (rowdata.diffstatus != null && rowdata.diffstatus.Count > coloumnid) {
-                    DiffStatus status = rowdata.diffstatus[coloumnid].Status;
+                if (rowdata.diffstatus != null && rowdata.diffstatus.Count > coloumnid && coloumnid >= 0) {
+                    var diffid = rowdata.column2diff[coloumnid];
+
+                    DiffStatus status = rowdata.diffstatus[diffid].Status;
 
                     switch (status) {
                         case DiffStatus.Modified:
@@ -342,7 +376,7 @@ namespace ExcelMerge {
                                 return Brushes.LightGreen;
                             break;
                         default:
-                            if (rowdata.CellEdited != null && rowdata.CellEdited.ContainsKey(coloumnid) && rowdata.CellEdited[coloumnid] == CellEditMode.Self) {
+                            if (rowdata.CellEdited != null && rowdata.CellEdited.ContainsKey(diffid) && rowdata.CellEdited[diffid] == CellEditMode.Self) {
                                 // 单元格修改
                                 return new SolidColorBrush(Color.FromRgb(160,238,225));
                             }

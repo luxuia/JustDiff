@@ -20,6 +20,7 @@ using System.Collections.ObjectModel;
 using NetDiff;
 using string2int = System.Collections.Generic.KeyValuePair<string, int>;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace ExcelMerge {
  
@@ -45,13 +46,29 @@ namespace ExcelMerge {
 
         public Mode mode = Mode.Diff;
 
+        public class Config {
+            public List<string> NoHeadPaths = new List<string>();
+        }
+
+        static string ConfigPath = "config.json";
+
+        public Config config;
+
         public MainWindow() {
             InitializeComponent();
 
             if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this)) {
                 return;
             }
-      
+
+
+            var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, ConfigPath);
+            if (!File.Exists(path)) {
+                config = new Config();
+                File.WriteAllText(path, JsonConvert.SerializeObject(config));
+            } else {
+                config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
+            }
             instance = this;
         }
 
@@ -61,6 +78,12 @@ namespace ExcelMerge {
 
         // load进来单个文件的情况
         public void OnFileLoaded(string file, string tag, FileOpenType type, int sheet = 0) {
+            file = file.Replace("\\", "/");
+            foreach (var reg in config.NoHeadPaths) {
+                if (System.Text.RegularExpressions.Regex.Match(file, reg).Length > 0) {
+                    ProcessHeader.IsChecked = false;
+                }
+            }
 
             var wb = Util.GetWorkBook(file);
 
@@ -195,6 +218,24 @@ namespace ExcelMerge {
             return wb;
         }
 
+        int[] getColumn2Diff(List<DiffResult<string>> diff, bool from, int count) {
+            int idx = 0;
+            var ret = new int[diff.Count];
+            for (int i = 0; i < diff.Count; ++i) {
+                ret[idx] = i;
+                if (from) {
+                    if (diff[i].Status != DiffStatus.Inserted) {
+                        idx++;
+                    }
+                } else {
+                    if (diff[i].Status != DiffStatus.Deleted) {
+                        idx++;
+                    }
+                }
+            }
+            return ret;
+        }
+
         SheetDiffStatus DiffSheet(ISheet src, ISheet dst, SheetDiffStatus status = null) {
             status = status??new SheetDiffStatus();
 
@@ -205,14 +246,19 @@ namespace ExcelMerge {
             if (head1 == null || head2 == null) return null;
 
             var diff = NetDiff.DiffUtil.Diff(head1, head2);
-            var optimized = NetDiff.DiffUtil.OptimizeCaseDeletedFirst(diff);
-            optimized = DiffUtil.OptimizeCaseDeletedFirst(diff);
+            var optimized = diff.ToList();// NetDiff.DiffUtil.OptimizeCaseDeletedFirst(diff);
+            //optimized = DiffUtil.OptimizeCaseDeletedFirst(diff);
 
             changed = changed || optimized.Any(a => a.Status != DiffStatus.Equal);
 
             status.diffHead = optimized.ToList();
+            status.column2diff1 = new Dictionary<int, int[]>();
+            status.column2diff2 = new Dictionary<int, int[]>();
+            status.column2diff1[0] = getColumn2Diff(status.diffHead, true, head1.Count);
+            status.column2diff2[0] = getColumn2Diff(status.diffHead, false, head2.Count);
 
-            status.columnCount =  status.diffHead.Count;
+            status.columnCount1 =  head1.Count;
+            status.columnCount2 = head2.Count;
             
             status.diffFistColumn = GetIDDiffList(src, dst, 1);
 
@@ -247,6 +293,8 @@ namespace ExcelMerge {
                     rowid2 = books["dst"].SheetValideRow[dst.SheetName] + 1;
                     dst.CreateRow(rowid2);
                 }
+                status.column2diff1[rowid1] = getColumn2Diff(diffrow, true, status.columnCount1);
+                status.column2diff2[rowid2] = getColumn2Diff(diffrow, false, status.columnCount2);
 
                 int diffIdx = status.diffSheet.Count;
 
@@ -298,7 +346,7 @@ namespace ExcelMerge {
             var option = new DiffOption<SheetNameCombo>();
             option.EqualityComparer = new SheetNameComboComparer();
             var result = DiffUtil.Diff(src.sheetNameCombos, dst.sheetNameCombos, option);
-            diffSheetName = DiffUtil.OptimizeCaseDeletedFirst(result).ToList();
+            diffSheetName = result.ToList();// DiffUtil.OptimizeCaseDeletedFirst(result).ToList();
 
             books["src"] = src;
             books["dst"] = dst;
@@ -454,7 +502,11 @@ namespace ExcelMerge {
         List<string> GetHeaderStrList(ISheet sheet) {
             List<string> header = new List<string>();
 
+<<<<<<< HEAD
             if (SimpleHeader.IsChecked == true) {
+=======
+            if (ProcessHeader.IsChecked == true) {
+>>>>>>> master
                 var list = new List<IRow>();
                 for (int i = 0; i < DiffStartIdx(); ++i) {
                     var row = sheet.GetRow(i);
@@ -574,7 +626,7 @@ namespace ExcelMerge {
             option.Optimize = false;
             option.EqualityComparer = new SheetIDComparer();
             var result = DiffUtil.Diff(list1, list2, option);
-            var optimize = DiffUtil.OptimizeCaseDeletedFirst(result);
+            var optimize = result.ToList();// DiffUtil.OptimizeCaseDeletedFirst(result);
 
             return optimize.ToList();
         }
@@ -585,20 +637,20 @@ namespace ExcelMerge {
 
             if (sheet1.GetRow(row1)!=null) {
                 var row = sheet1.GetRow(row1);
-                for (int i =0; i < status.columnCount;++i) { 
+                for (int i =0; i < status.columnCount1;++i) { 
                     list1.Add(Util.GetCellValue(row.GetCell(i)));
                 }
             }
 
             if (sheet2.GetRow(row2) != null) {
                 var row = sheet2.GetRow(row2);
-                for (int i = 0; i < status.columnCount; ++i) {
+                for (int i = 0; i < status.columnCount2; ++i) {
                     list2.Add(Util.GetCellValue(row.GetCell(i)));
                 }
             }
             var diff = DiffUtil.Diff(list1, list2);
-            var optimized = DiffUtil.OptimizeCaseDeletedFirst(diff);
-            optimized = DiffUtil.OptimizeCaseInsertedFirst(optimized);
+            var optimized = diff.ToList();// DiffUtil.OptimizeCaseDeletedFirst(diff);
+            //optimized = DiffUtil.OptimizeCaseInsertedFirst(optimized);
 
             return optimized.ToList();
         }

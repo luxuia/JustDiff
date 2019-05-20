@@ -54,10 +54,12 @@ namespace NetDiff
     {
         public Point Point { get; set; }
         public Node Parent { get; set; }
+        public int Dis;
 
-        public Node(Point point)
+        public Node(Point point, int dis = 0)
         {
             Point = point;
+            Dis = dis;
         }
 
         public override string ToString()
@@ -96,11 +98,69 @@ namespace NetDiff
 
             this.option = option;
 
+            return DoNewCalcuatePath();
+
             BeginCalculatePath();
 
             while (Next()) { }
 
             return EndCalculatePath();
+        }
+
+
+
+        private List<Point> DoNewCalcuatePath() {
+            var len1 = seq1.Length;
+            var len2 = seq2.Length;
+            int[,] maps = new int[len1+ 1,len2 + 1];
+            for (var i = 0; i < len1 + 1; i++) maps[i, 0] = i;
+            for (var i = 0; i < len2 + 1; i++) maps[0, i] = i;
+
+            for (var i=1; i <len1+1; i++) {
+                for (var j = 1; j < len2+1; j++) {
+                    var equal = option.EqualityComparer != null
+                        ? option.EqualityComparer.Equals(seq1[i - 1], (seq2[j - 1]))
+                        : seq1[i - 1].Equals(seq2[j - 1]);
+                    if (equal) {
+                        maps[i, j] = maps[i - 1, j - 1];
+                    } else {
+                        maps[i, j] = Math.Min(maps[i - 1, j] + 1, Math.Min(maps[i, j - 1] + 1, maps[i - 1, j - 1] + 1));
+                    }
+                }
+            }
+
+            var waypoints = new List<Point>();
+            int x = len1;
+            int y = len2;
+
+            do {
+                waypoints.Add(new Point(x, y));
+                int dis = maps[x, y];
+                int left = x > 0 ? maps[x - 1, y] : -1;
+                int up = y > 0 ? maps[x, y - 1] : -1;
+                int dig = x > 0 && y > 0 ? maps[x - 1, y - 1] : -1;
+                if (dig == dis - 1) {
+
+                    x--; y--;
+                }
+                else if (up == dis - 1) {
+                    y--;
+                }
+                else if (left == dis - 1) {
+                    x--;
+                }
+                else if (dig == dis) {
+                    // 这里要和上面的区分开，低优先级
+                    x--; y--;
+                }
+                else {
+                    throw new OverflowException();
+                }
+            } while (x > 0 || y > 0);
+            waypoints.Add(new Point(0, 0));
+
+            waypoints.Reverse();
+            return waypoints;
         }
 
         private void Initialize()
