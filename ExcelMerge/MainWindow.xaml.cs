@@ -218,6 +218,24 @@ namespace ExcelMerge {
             return wb;
         }
 
+        int[] getColumn2Diff(List<DiffResult<string>> diff, bool from, int count) {
+            int idx = 0;
+            var ret = new int[diff.Count];
+            for (int i = 0; i < diff.Count; ++i) {
+                ret[idx] = i;
+                if (from) {
+                    if (diff[i].Status != DiffStatus.Inserted) {
+                        idx++;
+                    }
+                } else {
+                    if (diff[i].Status != DiffStatus.Deleted) {
+                        idx++;
+                    }
+                }
+            }
+            return ret;
+        }
+
         SheetDiffStatus DiffSheet(ISheet src, ISheet dst, SheetDiffStatus status = null) {
             status = status??new SheetDiffStatus();
 
@@ -234,6 +252,10 @@ namespace ExcelMerge {
             changed = changed || optimized.Any(a => a.Status != DiffStatus.Equal);
 
             status.diffHead = optimized.ToList();
+            status.column2diff1 = new Dictionary<int, int[]>();
+            status.column2diff2 = new Dictionary<int, int[]>();
+            status.column2diff1[0] = getColumn2Diff(status.diffHead, true, head1.Count);
+            status.column2diff2[0] = getColumn2Diff(status.diffHead, false, head2.Count);
 
             status.columnCount1 =  head1.Count;
             status.columnCount2 = head2.Count;
@@ -271,6 +293,8 @@ namespace ExcelMerge {
                     rowid2 = books["dst"].SheetValideRow[dst.SheetName] + 1;
                     dst.CreateRow(rowid2);
                 }
+                status.column2diff1[rowid1] = getColumn2Diff(diffrow, true, status.columnCount1);
+                status.column2diff2[rowid2] = getColumn2Diff(diffrow, false, status.columnCount2);
 
                 int diffIdx = status.diffSheet.Count;
 

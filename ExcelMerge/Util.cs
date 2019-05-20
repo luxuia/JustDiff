@@ -214,6 +214,10 @@ namespace ExcelMerge {
         public HashSet<int> ignoreRow1;
         public HashSet<int> ignoreRow2;
 
+        // 
+        public Dictionary<int, int[]> column2diff1;
+        public Dictionary<int, int[]> column2diff2;
+
         public bool changed;
     }
 
@@ -267,6 +271,8 @@ namespace ExcelMerge {
         public List<DiffResult<string>> diffstatus;
         public Dictionary<int, int> RowID2DiffMap;
         public Dictionary<int, CellEditMode> CellEdited;
+
+        public int[] column2diff;
   
         public override bool TryGetMember(GetMemberBinder binder, out object result) {
             CellData ret;

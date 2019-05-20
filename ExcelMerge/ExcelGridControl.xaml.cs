@@ -222,10 +222,7 @@ namespace ExcelMerge {
                         data.tag = Tag as string;
                         data.diffIdx = j;
 
-                        var rowid2DiffMap = status.rowID2DiffMap1;
-                        if (tag == "dst") {
-                            rowid2DiffMap = status.rowID2DiffMap2;
-                        }
+                        data.column2diff = tag == "src" ? status.column2diff1[0] : status.column2diff2[0];
                         data.diffstatus = status.diffHead;
 
                         for (int i = 0; i < columnCount; ++i) {
@@ -261,6 +258,7 @@ namespace ExcelMerge {
                         data.diffstatus = status.diffSheet[j];
                         data.diffIdx = j;
                         data.CellEdited = edited[rowid];
+                        data.column2diff =  tag == "src" ? status.column2diff1[rowid] : status.column2diff2[rowid];
 
                         data.data["rowid"] = new CellData() { value = (rowid+1).ToString() };
                         for (int i = 0; i < columnCount; ++i) {
@@ -354,7 +352,9 @@ namespace ExcelMerge {
                 var coloumnid = param.columnID;
 
                 if (rowdata.diffstatus != null && rowdata.diffstatus.Count > coloumnid && coloumnid >= 0) {
-                    DiffStatus status = rowdata.diffstatus[coloumnid].Status;
+                    var diffid = rowdata.column2diff[coloumnid];
+
+                    DiffStatus status = rowdata.diffstatus[diffid].Status;
 
                     switch (status) {
                         case DiffStatus.Modified:
@@ -370,7 +370,7 @@ namespace ExcelMerge {
                                 return Brushes.LightGreen;
                             break;
                         default:
-                            if (rowdata.CellEdited != null && rowdata.CellEdited.ContainsKey(coloumnid) && rowdata.CellEdited[coloumnid] == CellEditMode.Self) {
+                            if (rowdata.CellEdited != null && rowdata.CellEdited.ContainsKey(diffid) && rowdata.CellEdited[diffid] == CellEditMode.Self) {
                                 // 单元格修改
                                 return new SolidColorBrush(Color.FromRgb(160,238,225));
                             }
