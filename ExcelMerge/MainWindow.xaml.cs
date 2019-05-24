@@ -48,6 +48,10 @@ namespace ExcelMerge {
 
         public class Config {
             public List<string> NoHeadPaths = new List<string>();
+
+            public int HeadCount = 3;
+
+            public int ShowLineID = 3;
         }
 
         static string ConfigPath = "config.json";
@@ -439,7 +443,7 @@ namespace ExcelMerge {
 
         public int DiffStartIdx() {
             // 首三行一起作为key
-            return ProcessHeader.IsChecked == true ? 3 : 0;
+            return ProcessHeader.IsChecked == true ? config.HeadCount : 0;
         }
 
         void Diff(int revision, int revisionto) {
