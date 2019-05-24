@@ -246,8 +246,8 @@ namespace ExcelMerge {
             if (head1 == null || head2 == null) return null;
 
             var diff = NetDiff.DiffUtil.Diff(head1, head2);
-            var optimized = diff.ToList();// NetDiff.DiffUtil.OptimizeCaseDeletedFirst(diff);
-            //optimized = DiffUtil.OptimizeCaseDeletedFirst(diff);
+            //var optimized = diff.ToList();// NetDiff.DiffUtil.OptimizeCaseDeletedFirst(diff);
+            var optimized = DiffUtil.OptimizeCaseDeletedFirst(diff);
 
             changed = changed || optimized.Any(a => a.Status != DiffStatus.Equal);
 
@@ -346,8 +346,8 @@ namespace ExcelMerge {
             var option = new DiffOption<SheetNameCombo>();
             option.EqualityComparer = new SheetNameComboComparer();
             var result = DiffUtil.Diff(src.sheetNameCombos, dst.sheetNameCombos, option);
-            diffSheetName = result.ToList();// DiffUtil.OptimizeCaseDeletedFirst(result).ToList();
-
+            //diffSheetName = result.ToList();//
+            diffSheetName = DiffUtil.OptimizeCaseDeletedFirst(result).ToList();
             books["src"] = src;
             books["dst"] = dst;
             var srcSheetID = -1;
@@ -439,7 +439,7 @@ namespace ExcelMerge {
 
         public int DiffStartIdx() {
             // 首三行一起作为key
-            return ProcessHeader.IsChecked == true ? 6 : 0;
+            return ProcessHeader.IsChecked == true ? 3 : 0;
         }
 
         void Diff(int revision, int revisionto) {
@@ -622,8 +622,8 @@ namespace ExcelMerge {
             option.Optimize = false;
             option.EqualityComparer = new SheetIDComparer();
             var result = DiffUtil.Diff(list1, list2, option);
-            var optimize = result.ToList();// DiffUtil.OptimizeCaseDeletedFirst(result);
-
+            //var optimize = result.ToList();// 
+            var optimize = DiffUtil.OptimizeCaseDeletedFirst(result);
             return optimize.ToList();
         }
 
@@ -645,8 +645,9 @@ namespace ExcelMerge {
                 }
             }
             var diff = DiffUtil.Diff(list1, list2);
-            var optimized = diff.ToList();// DiffUtil.OptimizeCaseDeletedFirst(diff);
-            //optimized = DiffUtil.OptimizeCaseInsertedFirst(optimized);
+            //var optimized = diff.ToList();// DiffUtil.OptimizeCaseDeletedFirst(diff);
+            var optimized = DiffUtil.OptimizeCaseDeletedFirst(diff);
+            optimized = DiffUtil.OptimizeCaseInsertedFirst(optimized);
 
             return optimized.ToList();
         }

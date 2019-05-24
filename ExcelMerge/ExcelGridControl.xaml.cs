@@ -144,8 +144,7 @@ namespace ExcelMerge {
 
                 var needChangeHead = MainWindow.instance.ProcessHeader.IsChecked == true;
                 if (needChangeHead) {
-                    var header = sheet.GetRow(4);
-                    var header2 = sheet.GetRow(5);
+                    var header = sheet.GetRow(2);
 
                     var headerkey = sheet.GetRow(1);
                     if (header == null || headerkey == null) return;
@@ -157,15 +156,10 @@ namespace ExcelMerge {
 
                     for (int i = 0; i < columnCount; ++i) {
                         var cell = header.GetCell(i);
-                        var cell2 = header2.GetCell(i);
                         var cellkey = headerkey.GetCell(i);
 
                         var str = Util.GetCellValue(cell);
-                        var str2 = Util.GetCellValue(cell2);
-
                         var strkey = Util.GetCellValue(cellkey);
-
-                        str = string.IsNullOrWhiteSpace(str) ? str2 : str;
 
                         if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(strkey)) {
                             columnCount = i;

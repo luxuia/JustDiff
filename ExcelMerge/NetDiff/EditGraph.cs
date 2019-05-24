@@ -79,6 +79,8 @@ namespace NetDiff
         private int offset;
         private bool isEnd;
 
+        private Dictionary<int, Dictionary<int, Node>> visited;
+
         public EditGraph(
             IEnumerable<T> seq1, IEnumerable<T> seq2)
         {
@@ -98,7 +100,7 @@ namespace NetDiff
 
             this.option = option;
 
-            return DoNewCalcuatePath();
+            //return DoNewCalcuatePath();
 
             BeginCalculatePath();
 
@@ -167,6 +169,7 @@ namespace NetDiff
         {
             farthestPoints = new int[seq1.Length + seq2.Length + 1];
             heads = new List<Node>();
+            visited = new Dictionary<int, Dictionary<int, Node>>();
         }
 
         private void BeginCalculatePath()
@@ -231,17 +234,17 @@ namespace NetDiff
                     updated.Add(bottomHead);
                 }
 
-                if (option.Optimize) {
-                    var diag = GetPoint(head.Point, Direction.Diagonal);
-                    if (InRange(diag)) {
-                        var newHead = new Node(diag);
-                        newHead.Parent = head;
-
-                        isEnd |= newHead.Point.Equals(endpoint);
-
-                        updated.Add(newHead);
-                    }
-                }
+                //if (option.Optimize) {
+                //    var diag = GetPoint(head.Point, Direction.Diagonal);
+                //    if (InRange(diag)) {
+                //        var newHead = new Node(diag);
+                //        newHead.Parent = head;
+                //
+                //        isEnd |= newHead.Point.Equals(endpoint);
+                //
+                //        updated.Add(newHead);
+                //    }
+                //}
             }
 
             heads = updated;
@@ -293,6 +296,12 @@ namespace NetDiff
 
             isEnd |= newHead.Point.Equals(endpoint);
 
+            Dictionary<int, Node> lines = null;
+            if (!visited.TryGetValue(newPoint.X, out lines)) {
+                visited[newPoint.X] = new Dictionary<int, Node>();
+            }
+            visited[newPoint.X][newPoint.Y] = newHead;
+
             return true;
         }
 
@@ -311,7 +320,11 @@ namespace NetDiff
                     return false;
             }
 
-            return UpdateFarthestPoint(nextPoint);
+            if (visited.ContainsKey(nextPoint.X) && visited[nextPoint.X].ContainsKey(nextPoint.Y)) {
+                return false;
+            }
+            return true;
+            //return UpdateFarthestPoint(nextPoint);
         }
 
         private Point GetPoint(Point currentPoint, Direction direction)
