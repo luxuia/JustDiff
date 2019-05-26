@@ -31,6 +31,12 @@ namespace ExcelMerge {
             }
             return null;
         }
+
+        public static bool CheckIsXLS(string path) {
+            path = path.ToLower();
+            return path.EndsWith(".xls") || path.EndsWith(".xlsx");
+        }
+
         
         public static string GetCellValue(ICell cell) {
             var str = string.Empty;

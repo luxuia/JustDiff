@@ -43,8 +43,9 @@ namespace ExcelMerge {
 
         public List<string> _tempFiles = new List<string>();
 
-
         public Mode mode = Mode.Diff;
+
+        public DirectoryDifferWindow dirWindow;
 
         public class Config {
             public List<string> NoHeadPaths = new List<string>();
@@ -74,6 +75,9 @@ namespace ExcelMerge {
                 config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
             }
             instance = this;
+
+            //dirWindow = new DirectoryDifferWindow();
+            //dirWindow.Show();
         }
 
         public void DataGrid_SelectedCellsChanged(object sender, SelectionChangedEventArgs e) {

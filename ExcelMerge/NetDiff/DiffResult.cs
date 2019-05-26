@@ -2,9 +2,9 @@
 {
     public class DiffResult<T>
     {
-        public T Obj1 { get; }
-        public T Obj2 { get; }
-        public DiffStatus Status { get; }
+        public T Obj1 { get; set; }
+        public T Obj2 { get; set; }
+        public DiffStatus Status { get; set; }
 
         public DiffResult(T obj1, T obj2, DiffStatus status)
         {

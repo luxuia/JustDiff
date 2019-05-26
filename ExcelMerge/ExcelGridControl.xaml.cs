@@ -2,21 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using NPOI.SS.UserModel;
-using System.Dynamic;
 using NetDiff;
-using System.IO;
 
 namespace ExcelMerge {
     /// <summary>
@@ -118,6 +108,8 @@ namespace ExcelMerge {
             var wb = wrap.book;
             var sheet = wb.GetSheetAt(wrap.sheet);
 
+            var issrc = isSrc;
+
             ExcelGrid.Columns.Clear();
 
             var datas = new ObservableCollection<ExcelData>();
@@ -127,7 +119,7 @@ namespace ExcelMerge {
 
                 // 不把diff结果转换为原来的顺序。因为隐藏相同行后，转换没有意义
 
-                int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => tag == "src" ? a.Obj1 != null && a.Obj1.ID == wrap.sheet : a.Obj2 != null && a.Obj2.ID == wrap.sheet);
+                int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => issrc ? a.Obj1 != null && a.Obj1.ID == wrap.sheet : a.Obj2 != null && a.Obj2.ID == wrap.sheet);
 
                 if (!MainWindow.instance.sheetsDiff.ContainsKey(sheetDiffidx)) { 
                     ExcelGrid.DataContext = datas;
@@ -139,7 +131,7 @@ namespace ExcelMerge {
                 if (status == null) return;
 
                 // header不会空
-                var columnCount = tag == "src" ? status.columnCount1 : status.columnCount2;
+                var columnCount = issrc ? status.columnCount1 : status.columnCount2;
                 var headerStr = new string[columnCount];
 
                 var needChangeHead = MainWindow.instance.ProcessHeader.IsChecked == true;
@@ -222,7 +214,7 @@ namespace ExcelMerge {
                         data.tag = Tag as string;
                         data.diffIdx = j;
 
-                        data.column2diff = tag == "src" ? status.column2diff1[0] : status.column2diff2[0];
+                        data.column2diff = issrc ? status.column2diff1[0] : status.column2diff2[0];
                         data.diffstatus = status.diffHead;
 
                         for (int i = 0; i < columnCount; ++i) {
@@ -234,17 +226,10 @@ namespace ExcelMerge {
                     }
                 }
 
-                Dictionary<int, Dictionary<int, CellEditMode>> edited;
-                if (selfTag == "src") {
-                    edited = status.RowEdited1;
-                } else {
-                    edited = status.RowEdited2;
-                }
+                Dictionary<int, Dictionary<int, CellEditMode>> edited = issrc ? status.RowEdited1 : status.RowEdited2;
+
                 for (int j = 0; j< status.diffSheet.Count; j++) {
-                    int rowid = status.Diff2RowID1[j];
-                    if (tag == "dst") {
-                        rowid = status.Diff2RowID2[j];
-                    }
+                    int rowid = issrc ? status.Diff2RowID1[j] : status.Diff2RowID2[j];
 
                     // 修改过，或者是
                     if (edited[rowid].Count > 0 || status.diffSheet[j].Any(a => a.Status != DiffStatus.Equal)) {
@@ -258,7 +243,7 @@ namespace ExcelMerge {
                         data.diffstatus = status.diffSheet[j];
                         data.diffIdx = j;
                         data.CellEdited = edited[rowid];
-                        data.column2diff =  tag == "src" ? status.column2diff1[rowid] : status.column2diff2[rowid];
+                        data.column2diff = issrc ? status.column2diff1[rowid] : status.column2diff2[rowid];
 
                         data.data["rowid"] = new CellData() { value = (rowid+1).ToString() };
                         for (int i = 0; i < columnCount; ++i) {
@@ -275,7 +260,7 @@ namespace ExcelMerge {
 
             CtxMenu.Items.Clear();
             var item = new MenuItem();
-            item.Header = "复制到" + (isSrc ? "右侧" : "左侧");
+            item.Header = "复制到" + (issrc ? "右侧" : "左侧");
             item.Click += Menu_CopyToSide;
             CtxMenu.Items.Add(item);
         }

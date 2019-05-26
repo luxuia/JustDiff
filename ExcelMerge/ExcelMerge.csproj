@@ -121,6 +121,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="DirectoryDifferWindow.xaml.cs">
+      <DependentUpon>DirectoryDifferWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="DirectoryGridControl.xaml.cs">
+      <DependentUpon>DirectoryGridControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="NetDiff\DiffOption.cs" />
     <Compile Include="NetDiff\DiffOrderType.cs" />
     <Compile Include="NetDiff\DiffResult.cs" />
@@ -129,6 +135,14 @@
     <Compile Include="NetDiff\EditGraph.cs" />
     <Compile Include="NetDiff\Extension.cs" />
     <Compile Include="Util.cs" />
+    <Page Include="DirectoryDifferWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DirectoryGridControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="ExcelGridControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -170,7 +184,6 @@
     <None Include="config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="ExcelMerge_TemporaryKey.pfx" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
