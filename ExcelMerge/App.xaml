@@ -11,5 +11,7 @@
         <System:String x:Key="DiffLabel">对比</System:String>
         <System:String x:Key="ApplyLabel">保存</System:String>
         <System:String x:Key="SimpleHeaderLabel">处理表头</System:String>
+		<System:String x:Key="VersionSearch">单号搜索</System:String>
+		<System:String x:Key="CommitID">单号列表(空格)</System:String>
     </Application.Resources>
 </Application>

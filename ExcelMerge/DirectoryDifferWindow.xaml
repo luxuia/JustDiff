@@ -16,8 +16,22 @@
 			<ColumnDefinition/>
 		</Grid.ColumnDefinitions>
 
-
 		<Border Grid.Row="0" Grid.Column="0" Background="LightCoral"  Grid.ColumnSpan="2" />
+
+
+		<StackPanel Grid.Row="0" Grid.Column="0">
+			<StackPanel Orientation="Horizontal">
+				<Label Name="SrcDir" >c:/dir/to/</Label>
+			</StackPanel>
+			<DockPanel  Grid.Row="1" Grid.Column="0">
+				<Label Content="{DynamicResource CommitID}"/>
+				<TextBox Name="FilterCommits" Height="20" HorizontalAlignment="Stretch" />
+			</DockPanel>
+			<StackPanel Orientation="Horizontal">
+				<Button x:Name="DoVersionDiff" Margin="5,5,5,5" Click="DoVersionDiff_Click" Content="{DynamicResource VersionSearch}" Width="70"/>
+				<Label x:Name="TextTip" />
+			</StackPanel>
+		</StackPanel>
 
 		<local:DirectoryGridControl x:Name="SrcDataGrid" Grid.Column="0" Grid.Row="1" Margin="1,0,1,1"
             AllowDrop="True"

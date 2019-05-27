@@ -457,7 +457,7 @@ namespace ExcelMerge {
             return ProcessHeader.IsChecked == true ? config.HeadCount : 0;
         }
 
-        void Diff(int revision, int revisionto) {
+        public void Diff(long revision, long revisionto) {
             using (SvnClient client = new SvnClient()) {
                 string file = SrcFile;
                 SvnInfoEventArgs info;

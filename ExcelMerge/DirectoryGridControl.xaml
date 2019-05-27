@@ -18,7 +18,7 @@
 
 		<Grid Grid.Row="0" Grid.Column="0">
 			<DataGrid x:Name="FileGrid" ItemsSource="{Binding}" AutoGenerateColumns="False" 
-                      AllowDrop="True" Drop="FileGrid_Drop" ScrollViewer.ScrollChanged ="FileGrid_ScrollChanged" SelectionChanged="FileGrid_SelectionChanged">
+                      AllowDrop="True" Drop="FileGrid_Drop" ScrollViewer.ScrollChanged ="FileGrid_ScrollChanged" SelectionChanged="FileGrid_SelectionChanged" IsReadOnly="True">
 				<DataGrid.ContextMenu>
 					<ContextMenu Name="CtxMenu">
 					</ContextMenu>
