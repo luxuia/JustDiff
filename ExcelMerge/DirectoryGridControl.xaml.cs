@@ -56,6 +56,8 @@ namespace ExcelMerge {
             if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
                 var files = e.Data.GetData(DataFormats.FileDrop) as string[];
 
+                DirectoryDifferWindow.instance.OnSetDirs(files, Tag as string);
+                /*
                 if (files != null && files.Any()) {
                     HandleDirOpen(files[0], FileOpenType.Drag, Tag as string);
 
@@ -63,7 +65,7 @@ namespace ExcelMerge {
                         HandleDirOpen(files[1], FileOpenType.Drag, otherTag);
                     }
                 }
-
+                */
             }
         }
 

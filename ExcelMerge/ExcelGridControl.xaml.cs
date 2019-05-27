@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using NetDiff;
+using System.IO;
 
 namespace ExcelMerge {
     /// <summary>
@@ -280,12 +281,18 @@ namespace ExcelMerge {
         private void ExcelGrid_Drop(object sender, DragEventArgs e) {
             if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
                 var files = e.Data.GetData(DataFormats.FileDrop) as string[];
-
+                
                 if (files != null && files.Any()) {
-                    HandleFileOpen(files[0], FileOpenType.Drag, Tag as string);
+                    var file = files[0];
+                    if (Directory.Exists(file)) {
+                        MainWindow.instance.ShowDirectoryWindow(files, Tag as string);
+                    }
+                    else {
+                        HandleFileOpen(files[0], FileOpenType.Drag, Tag as string);
 
-                    if (files.Length > 1) {
-                        HandleFileOpen(files[1], FileOpenType.Drag, otherTag);
+                        if (files.Length > 1) {
+                            HandleFileOpen(files[1], FileOpenType.Drag, otherTag);
+                        }
                     }
                 }
             }

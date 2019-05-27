@@ -80,6 +80,13 @@ namespace ExcelMerge {
             //dirWindow.Show();
         }
 
+        public void ShowDirectoryWindow(string[] dirs, string tag) {
+            dirWindow = dirWindow != null ? dirWindow : new DirectoryDifferWindow();
+            dirWindow.Show();
+
+            dirWindow.OnSetDirs(dirs, tag);
+        }
+
         public void DataGrid_SelectedCellsChanged(object sender, SelectionChangedEventArgs e) {
 
         }

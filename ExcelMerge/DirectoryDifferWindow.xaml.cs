@@ -66,7 +66,15 @@ namespace ExcelMerge {
             results = new List<DiffResult<string>>();
         }
 
+        public void OnSetDirs(string[] dirs, string tag = "src") {
+            if (dirs != null && dirs.Any()) {
+                OnFileLoaded(dirs[0], tag, FileOpenType.Drag);
 
+                if (dirs.Length > 1) {
+                    OnFileLoaded(dirs[1], tag == "src" ? "dst" :"src", FileOpenType.Drag);
+                }
+            }
+        }
 
         // load进来单个文件的情况
         public void OnFileLoaded(string file, string tag, FileOpenType type) {
@@ -110,9 +118,9 @@ namespace ExcelMerge {
 
                 if (res.Status == DiffStatus.Equal) {
                     // check md5 first
-                    var hash1 = md5Hash.ComputeHash(File.OpenRead(src.root + file));
-                    var hash2 = md5Hash.ComputeHash(File.OpenRead(dst.root + file));
-                    if (!hash1.SequenceEqual(hash2)) {
+                    //var hash1 = md5Hash.ComputeHash(File.OpenRead(src.root + file));
+                    //var hash2 = md5Hash.ComputeHash(File.OpenRead(dst.root + file));
+                    if (!DiffUtil.FilesAreEqual(src.root + file, dst.root+file)) {
                         res.Status = DiffStatus.Modified;
                     }
                 }
@@ -142,6 +150,10 @@ namespace ExcelMerge {
             }
             else {
                 SrcDataGrid.FileGrid.SelectedIndex = rowid;
+            }
+            var res = results[rowid];
+            if (res.Status == DiffStatus.Modified) {
+                MainWindow.instance.Diff(src.root + res.Obj1, dst.root + res.Obj2);
             }
         }
     }
