@@ -141,18 +141,6 @@ namespace ExcelMerge {
             }
 
             FileGrid.DataContext = datas;
-
-            CtxMenu.Items.Clear();
-            var item = new MenuItem();
-            item.Header = "复制到" + (issrc ? "右侧" : "左侧");
-            item.Click += Menu_CopyToSide;
-            CtxMenu.Items.Add(item);
-        }
-
-        private void Menu_CopyToSide(object sender, RoutedEventArgs e) {
-            var selectCells = FileGrid.SelectedCells;
-
-            MainWindow.instance.CopyCellsValue(Tag as string, otherTag, selectCells);
         }
 
         public class ConverterParamter {

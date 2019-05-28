@@ -134,8 +134,8 @@ namespace ExcelMerge {
                     newCell.SetCellErrorValue(oldCell.ErrorCellValue);
                     break;
                 case CellType.Formula:
-                    newCell.SetCellFormula(oldCell.CellFormula);
-                    break;
+                    //newCell.SetCellFormula(oldCell.CellFormula);
+                    //break;
                 case CellType.Numeric:
                     newCell.SetCellValue(oldCell.NumericCellValue);
                     break;
@@ -171,6 +171,7 @@ namespace ExcelMerge {
         public Dictionary<int, int> ItemID2ComboIdx;
 
         public Dictionary<string, int> SheetValideRow;
+        public Dictionary<string, int> SheetValideColumn;
 
         public ISheet GetCurSheet() {
             return book.GetSheetAt(sheet);

@@ -33,7 +33,7 @@ namespace ExcelMerge {
 
         public Dictionary<string, WorkBookWrap> books = new Dictionary<string, WorkBookWrap>();
 
-        public Dictionary<int, SheetDiffStatus> sheetsDiff = new Dictionary<int, SheetDiffStatus>();
+        public Dictionary<string, SheetDiffStatus> sheetsDiff = new Dictionary<string, SheetDiffStatus>();
         
         public List<DiffResult<SheetNameCombo>> diffSheetName;
 
@@ -142,19 +142,42 @@ namespace ExcelMerge {
             var srcSheet = books[v].GetCurSheet();
             var dstSheet = books[otherTag].GetCurSheet();
 
+            var lines = new List<int>();
             foreach (var cell in selectCells) {
                 var rowdata = cell.Item as ExcelData;
-                var column = cell.Column.DisplayIndex;
-                var rowid = rowdata.rowId;
+                if (!lines.Contains(rowdata.rowId)) {
+                    lines.Add(rowdata.rowId);
+                }
+            }
 
+            if (!sheetsDiff.ContainsKey(srcSheet.SheetName)) {
+                return;
+            }
+            var status = sheetsDiff[srcSheet.SheetName];
+
+            foreach (var rowid in lines) {
                 var row = srcSheet.GetRow(rowid);
 
-                Util.CopyCell(row.GetCell(column), dstSheet.GetRow(rowid).GetCell(column));
+                var diffrowid = v == "src" ? status.rowID2DiffMap1[rowid] : status.rowID2DiffMap2[rowid];
+                var torowid = otherTag == "src" ? status.Diff2RowID1[diffrowid]:status.Diff2RowID2[diffrowid];
 
-                var diffidx = rowdata.diffIdx;
+                var torow = dstSheet.GetRow(torowid);
+                if (torow == null) {
+                    torowid = books[otherTag].SheetValideRow[dstSheet.SheetName];
+                    dstSheet.CreateRow(torowid);
 
-                OnCellEdited(otherTag, rowid, column, CellEditMode.Self);
-                OnCellEdited(v, rowid, column, CellEditMode.OtherSide);
+                    torow = dstSheet.GetRow(torowid);
+                    for (int i = 0; i < books[v].SheetValideColumn[srcSheet.SheetName]; ++i) {
+                        torow.CreateCell(i);
+                    }
+                }
+
+                for (int i = 0; i < books[v].SheetValideColumn[srcSheet.SheetName]; ++i) {
+                    Util.CopyCell(row.GetCell(i), torow.GetCell(i));
+
+                    OnCellEdited(v, rowid, i, CellEditMode.OtherSide);
+                    OnCellEdited(otherTag, torowid, i, CellEditMode.Self);
+                }
             }
 
             RefreshCurSheet();
@@ -229,11 +252,12 @@ namespace ExcelMerge {
             }
 
             wb.SheetValideRow = new Dictionary<string, int>();
+            wb.SheetValideColumn = new Dictionary<string, int>();
 
             return wb;
         }
 
-        int[] getColumn2Diff(List<DiffResult<string>> diff, bool from, int count) {
+        int[] getColumn2Diff(List<DiffResult<string>> diff, bool from) {
             int idx = 0;
             var ret = new int[diff.Count];
             for (int i = 0; i < diff.Count; ++i) {
@@ -269,11 +293,11 @@ namespace ExcelMerge {
             status.diffHead = optimized.ToList();
             status.column2diff1 = new Dictionary<int, int[]>();
             status.column2diff2 = new Dictionary<int, int[]>();
-            status.column2diff1[0] = getColumn2Diff(status.diffHead, true, head1.Count);
-            status.column2diff2[0] = getColumn2Diff(status.diffHead, false, head2.Count);
+            status.column2diff1[0] = getColumn2Diff(status.diffHead, true);
+            status.column2diff2[0] = getColumn2Diff(status.diffHead, false);
 
-            status.columnCount1 =  head1.Count;
-            status.columnCount2 = head2.Count;
+            books["src"].SheetValideColumn[src.SheetName] = head1.Count;
+            books["dst"].SheetValideColumn[dst.SheetName] = head2.Count;
             
             status.diffFistColumn = GetIDDiffList(src, dst, 1);
 
@@ -301,15 +325,15 @@ namespace ExcelMerge {
 
                 if (diffkv.Obj1.Key == null) {
                     // 创建新行，方便比较,放在后面是为了保证diff的时候是new,delete的形式，而不是modify
-                    rowid1 =  books["src"].SheetValideRow[src.SheetName] + 1;
-                    src.CreateRow(rowid1);
+                    rowid1 =  books["src"].SheetValideRow[src.SheetName];
+                    //src.CreateRow(rowid1);
                 }
                 if (diffkv.Obj2.Key == null) {
-                    rowid2 = books["dst"].SheetValideRow[dst.SheetName] + 1;
-                    dst.CreateRow(rowid2);
+                    rowid2 = books["dst"].SheetValideRow[dst.SheetName];
+                    //dst.CreateRow(rowid2);
                 }
-                status.column2diff1[rowid1] = getColumn2Diff(diffrow, true, status.columnCount1);
-                status.column2diff2[rowid2] = getColumn2Diff(diffrow, false, status.columnCount2);
+                status.column2diff1[rowid1] = getColumn2Diff(diffrow, true);
+                status.column2diff2[rowid2] = getColumn2Diff(diffrow, false);
 
                 int diffIdx = status.diffSheet.Count;
 
@@ -370,21 +394,22 @@ namespace ExcelMerge {
 
             for (int i = 0; i < diffSheetName.Count; ++i) {
                 var sheetname = diffSheetName[i];
+                var name = sheetname.Obj1 == null ? sheetname.Obj2.Name : sheetname.Obj1.Name;
 
                 // 只有sheet名字一样的可以diff， 先这么处理
                 if (sheetname.Status == DiffStatus.Equal) {
                     var sheet1 = sheetname.Obj1.ID;
                     var sheet2 = sheetname.Obj2.ID;
                     
-                    sheetsDiff[i] = DiffSheet(src.book.GetSheetAt(sheet1), dst.book.GetSheetAt(sheet2));
+                    sheetsDiff[name] = DiffSheet(src.book.GetSheetAt(sheet1), dst.book.GetSheetAt(sheet2));
 
-                    if (sheetsDiff[i] != null) {
+                    if (sheetsDiff[name] != null) {
                         oldsheetName = sheetname.Obj1.Name;
                         var sheetidx = 0;
                         if (!string.IsNullOrEmpty(oldsheetName)) {
                             sheetidx = src.book.GetSheetIndex(oldsheetName);
                         }
-                        if (sheetsDiff[i].changed || srcSheetID == -1) {
+                        if (sheetsDiff[name].changed || srcSheetID == -1) {
                             src.sheet = sheetidx;
                             srcSheetID = sheetidx;
                         }
@@ -392,7 +417,7 @@ namespace ExcelMerge {
                         if (!string.IsNullOrEmpty(oldsheetName)) {
                             sheetidx = dst.book.GetSheetIndex(oldsheetName);
                         }
-                        if (sheetsDiff[i].changed || dstSheetID == -1) {
+                        if (sheetsDiff[name].changed || dstSheetID == -1) {
                             dst.sheet = sheetidx;
                             dstSheetID = sheetidx;
                         }
@@ -414,7 +439,8 @@ namespace ExcelMerge {
                     color = Util.GetColorByDiffStatus(status);
                 }
                 else {
-                    color = Util.GetColorByDiffStatus(sheetsDiff.ContainsKey(index) && sheetsDiff[index]!=null && sheetsDiff[index].changed ? DiffStatus.Modified : DiffStatus.Equal);
+                    var name = diffSheetName[index].Obj1.Name;
+                    color = Util.GetColorByDiffStatus(sheetsDiff.ContainsKey(name) && sheetsDiff[name] !=null && sheetsDiff[name].changed ? DiffStatus.Modified : DiffStatus.Equal);
                 }
 
                 if (color != null) {
@@ -436,7 +462,8 @@ namespace ExcelMerge {
                     color = Util.GetColorByDiffStatus(status);
                 }
                 else {
-                    color = Util.GetColorByDiffStatus(sheetsDiff.ContainsKey(index) && sheetsDiff[index] != null && sheetsDiff[index].changed ? DiffStatus.Modified : DiffStatus.Equal);
+                    var name = diffSheetName[index].Obj1.Name;
+                    color = Util.GetColorByDiffStatus(sheetsDiff.ContainsKey(name) && sheetsDiff[name] != null && sheetsDiff[name].changed ? DiffStatus.Modified : DiffStatus.Equal);
                 }
 
                 if (color != null) {
@@ -489,10 +516,9 @@ namespace ExcelMerge {
         }
 
         void ReDiff() {
-            var src_sheet = books["src"].sheet;
-            int index = diffSheetName.FindIndex(a => a.Obj1 != null && a.Obj1.ID == src_sheet);
+            var src_sheet = books["src"].sheetname;
             
-            DiffSheet(books["src"].GetCurSheet(), books["dst"].GetCurSheet(), sheetsDiff[index]);
+            DiffSheet(books["src"].GetCurSheet(), books["dst"].GetCurSheet(), sheetsDiff[src_sheet]);
   
             DstDataGrid.RefreshData();
             SrcDataGrid.RefreshData();
@@ -501,15 +527,13 @@ namespace ExcelMerge {
         public void OnCellEdited(string tag, int rowid, int columnid, CellEditMode mode) {
             Dictionary<int, Dictionary<int, CellEditMode>> edited;
             if (tag == "src") {
-                var src_sheet = books["src"].sheet;
-                int index = diffSheetName.FindIndex(a => a.Obj1 != null && a.Obj1.ID == src_sheet);
+                var src_sheet = books["src"].sheetname;
 
-                edited = sheetsDiff[index].RowEdited1;
+                edited = sheetsDiff[src_sheet].RowEdited1;
             } else {
-                var src_sheet = books["dst"].sheet;
-                int index = diffSheetName.FindIndex(a => a.Obj2 != null && a.Obj2.ID == src_sheet);
+                var src_sheet = books["dst"].sheetname;
 
-                edited = sheetsDiff[index].RowEdited2;
+                edited = sheetsDiff[src_sheet].RowEdited2;
             }
             edited[rowid][columnid] = mode;
         }
@@ -648,14 +672,16 @@ namespace ExcelMerge {
 
             if (sheet1.GetRow(row1)!=null) {
                 var row = sheet1.GetRow(row1);
-                for (int i =0; i < status.columnCount1;++i) { 
+                var columnCount = books["src"].SheetValideColumn[sheet1.SheetName];
+                for (int i =0; i < columnCount; ++i) { 
                     list1.Add(Util.GetCellValue(row.GetCell(i)));
                 }
             }
 
             if (sheet2.GetRow(row2) != null) {
                 var row = sheet2.GetRow(row2);
-                for (int i = 0; i < status.columnCount2; ++i) {
+                var columnCount = books["dst"].SheetValideColumn[sheet2.SheetName];
+                for (int i = 0; i < columnCount; ++i) {
                     list2.Add(Util.GetCellValue(row.GetCell(i)));
                 }
             }

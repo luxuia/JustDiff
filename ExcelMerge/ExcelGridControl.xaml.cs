@@ -120,19 +120,19 @@ namespace ExcelMerge {
 
                 // 不把diff结果转换为原来的顺序。因为隐藏相同行后，转换没有意义
 
-                int sheetDiffidx = MainWindow.instance.diffSheetName.FindIndex(a => issrc ? a.Obj1 != null && a.Obj1.ID == wrap.sheet : a.Obj2 != null && a.Obj2.ID == wrap.sheet);
+                var sheetname = wrap.sheetname;
 
-                if (!MainWindow.instance.sheetsDiff.ContainsKey(sheetDiffidx)) { 
+                if (!MainWindow.instance.sheetsDiff.ContainsKey(sheetname)) { 
                     ExcelGrid.DataContext = datas;
                     return;
                 }
-                var status = MainWindow.instance.sheetsDiff[sheetDiffidx];
+                var status = MainWindow.instance.sheetsDiff[sheetname];
 
                 // 没有比较数据的sheet
                 if (status == null) return;
 
                 // header不会空
-                var columnCount = issrc ? status.columnCount1 : status.columnCount2;
+                var columnCount = wrap.SheetValideColumn[sheet.SheetName];
                 var headerStr = new string[columnCount];
 
                 var needChangeHead = MainWindow.instance.ProcessHeader.IsChecked == true;
@@ -248,7 +248,7 @@ namespace ExcelMerge {
 
                         data.data["rowid"] = new CellData() { value = (rowid+1).ToString() };
                         for (int i = 0; i < columnCount; ++i) {
-                            var cell = row.GetCell(i);
+                            var cell = row != null ? row.GetCell(i):null;
                             data.data[headerStr[i]] = new CellData() { value = Util.GetCellValue(cell), cell = cell};
                         }
 
@@ -261,7 +261,7 @@ namespace ExcelMerge {
 
             CtxMenu.Items.Clear();
             var item = new MenuItem();
-            item.Header = "复制到" + (issrc ? "右侧" : "左侧");
+            item.Header = "行复制到" + (issrc ? "右侧" : "左侧");
             item.Click += Menu_CopyToSide;
             CtxMenu.Items.Add(item);
         }
