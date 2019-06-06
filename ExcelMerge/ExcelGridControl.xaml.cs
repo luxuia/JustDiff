@@ -8,6 +8,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using NetDiff;
 using System.IO;
+using System.Windows.Input;
 
 namespace ExcelMerge {
     /// <summary>
@@ -41,6 +42,8 @@ namespace ExcelMerge {
 
             ExcelGrid.CellEditEnding += ExcelGrid_CellEditEnding;
 
+            ExcelGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, Menu_Save));
+            ExcelGrid.InputBindings.Add(new InputBinding(ApplicationCommands.Copy, ApplicationCommands.Copy.InputGestures[0]));
         }
 
         private void ExcelGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
@@ -56,9 +59,40 @@ namespace ExcelMerge {
             }
         }
 
+        private void Menu_Save(object sender, ExecutedRoutedEventArgs e) {
+            var selectCells = ExcelGrid.SelectedCells;
+            var srcSheet = MainWindow.instance.books[selfTag].GetCurSheet();
+
+            var ret = "<TABLE><TR>";
+            var last_rowid = -1;
+            foreach (var cell in selectCells) {
+                var rowdata = cell.Item as ExcelData;
+                var column = cell.Column.DisplayIndex;
+                var rowid = rowdata.rowId;
+
+                var row = srcSheet.GetRow(rowid);
+
+                if (last_rowid > 0) { 
+                    if (last_rowid != rowid) {
+                        ret += "</TR><TR>";
+                    } else {
+                        ret += "";
+                    }
+                }
+
+                ret += String.Format("<TD>{0}</TD>", Util.GetCellValue(row.GetCell(column)).Replace("\n", "<br style=\"mso-data-placement:same-cell; \" />"));
+
+                last_rowid = rowid;
+            }
+            ret += "</TR></TABLE>";
+
+            Clipboard.SetText(ret);
+
+        }
+
         private void Menu_CopyToSide(object sender, RoutedEventArgs e) {
             var selectCells = ExcelGrid.SelectedCells;
-
+            //var text = Clipboard.GetText(TextDataFormat.Html);
             MainWindow.instance.CopyCellsValue(Tag as string, otherTag, selectCells);
         }
 
