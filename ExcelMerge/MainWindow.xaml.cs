@@ -227,6 +227,10 @@ namespace ExcelMerge {
             }
         }
 
+        void SyncUpdateSVNRevision() {
+
+        }
+
         WorkBookWrap InitWorkWrap(string file) {
             var wb = new WorkBookWrap() {
                 book = Util.GetWorkBook(file),

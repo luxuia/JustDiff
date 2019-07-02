@@ -9,6 +9,7 @@ using System.Windows.Media;
 using NetDiff;
 using System.IO;
 using System.Windows.Input;
+using System.Net;
 
 namespace ExcelMerge {
     /// <summary>
@@ -80,7 +81,7 @@ namespace ExcelMerge {
                     }
                 }
 
-                ret += String.Format("<TD>{0}</TD>", Util.GetCellValue(row.GetCell(column)).Replace("\n", "<br style=\"mso-data-placement:same-cell; \" />"));
+                ret += String.Format("<TD>{0}</TD>", WebUtility.HtmlEncode( Util.GetCellValue(row.GetCell(column))).Replace("\n", "<br style=\"mso-data-placement:same-cell; \" />"));
 
                 last_rowid = rowid;
             }
@@ -356,7 +357,7 @@ namespace ExcelMerge {
                 var row = e.AddedItems[0] as ExcelData;
                 if (row != null) {
                     // 新行 NewRowItem 类
-                    MainWindow.instance.OnSelectGridRow(Tag as string, row.rowId);
+                    //MainWindow.instance.OnSelectGridRow(Tag as string, row.rowId);
                 }
             }
         }
