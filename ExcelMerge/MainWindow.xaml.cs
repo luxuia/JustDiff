@@ -294,11 +294,11 @@ namespace ExcelMerge {
 
             changed = changed || optimized.Any(a => a.Status != DiffStatus.Equal);
 
-            status.diffHead = optimized.ToList();
+            status.diffHead = new SheetRowDiff() { diffcells = optimized.ToList() };
             status.column2diff1 = new Dictionary<int, int[]>();
             status.column2diff2 = new Dictionary<int, int[]>();
-            status.column2diff1[0] = getColumn2Diff(status.diffHead, true);
-            status.column2diff2[0] = getColumn2Diff(status.diffHead, false);
+            status.column2diff1[0] = getColumn2Diff(status.diffHead.diffcells, true);
+            status.column2diff2[0] = getColumn2Diff(status.diffHead.diffcells, false);
 
             books["src"].SheetValideColumn[src.SheetName] = head1.Count;
             books["dst"].SheetValideColumn[dst.SheetName] = head2.Count;
@@ -307,7 +307,7 @@ namespace ExcelMerge {
 
             changed = changed || status.diffFistColumn.Any(a => a.Status != DiffStatus.Equal);
 
-            status.diffSheet = new List<List<DiffResult<string>>>();
+            status.diffSheet = new List<SheetRowDiff>();
             status.rowID2DiffMap1 = new Dictionary<int, int>();
             status.rowID2DiffMap2 = new Dictionary<int, int>();
             status.Diff2RowID1 = new Dictionary<int, int>();
@@ -354,9 +354,27 @@ namespace ExcelMerge {
                     status.RowEdited2[rowid2] = new Dictionary<int, CellEditMode>();
                 }
 
-                status.diffSheet.Add(diffrow);
+                var rowdiff = new SheetRowDiff();
+                rowdiff.diffcells = diffrow;
+
+                rowdiff.changed = diffrow.Any(a => a.Status != DiffStatus.Equal);
+                if (rowdiff.changed) {
+                    rowdiff.diffcell_details = new List<List<DiffResult<char>>>();
+                    foreach (var cell in diffrow) {
+                        if (cell.Status == DiffStatus.Modified) {
+                            var cell_diff = NetDiff.DiffUtil.Diff(cell.Obj1, cell.Obj2);
+                            //var optimized = diff.ToList();// NetDiff.DiffUtil.OptimizeCaseDeletedFirst(diff);
+                            var opt_cell_diff = DiffUtil.OptimizeCaseDeletedFirst(cell_diff);
+
+                            rowdiff.diffcell_details.Add(opt_cell_diff.ToList());
+                        } else {
+                            rowdiff.diffcell_details.Add(null);
+                        }
+                    }
+                }
+                status.diffSheet.Add(rowdiff);
                 
-                changed = changed || diffrow.Any(a => a.Status != DiffStatus.Equal);
+                changed = changed || rowdiff.changed;
 
                 if (changed) {
                     changed = true;

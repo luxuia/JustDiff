@@ -127,7 +127,7 @@ namespace ExcelMerge {
                         var data = new ExcelData();
                         data.tag = Tag as string;
                         data.diffIdx = j;
-                        data.diffstatus = results;
+                       // data.diffstatus = results;
                         data.rowId = j;
 
                         var path = res.Obj1 == null ? res.Obj2 : res.Obj1;
@@ -161,7 +161,7 @@ namespace ExcelMerge {
                 var rowid = rowdata.rowId;
                 var coloumnid = param.columnID;
 
-                DiffStatus status = rowdata.diffstatus[rowid].Status;
+                DiffStatus status = DiffStatus.Modified;// rowdata.diffstatus[rowid].Status;
 
                     switch (status) {
                         case DiffStatus.Modified:

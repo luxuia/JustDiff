@@ -148,7 +148,8 @@ namespace ExcelMerge {
 
             ExcelGrid.Columns.Clear();
 
-            var datas = new ObservableCollection<ExcelData>();
+            //var datas = new ObservableCollection<ExcelData>();
+            var datas = new List<ExcelData>();
 
             if (MainWindow.instance.diffSheetName != null) {
                 var columns = ExcelGrid.Columns;
@@ -196,20 +197,25 @@ namespace ExcelMerge {
                         // 第二行+第三行，合起来作为key
                         var encodestr = System.Uri.EscapeDataString(strkey) + "_" + i;// + System.Uri.EscapeDataString(str);
 
-                        var column = new DataGridTextColumn();
+                        //var column = new DataGridTextColumn();
+                        //
+                        //column.Binding = new Binding(encodestr);
+                        //column.Header = str;
+                        //
+                        //Style aStyle = new Style(typeof(TextBlock));
+                        //
+                        //var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = i, coloumnName = str } };
+                        //
+                        //aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
+                        //
+                        //column.ElementStyle = aStyle;
 
-                        column.Binding = new Binding(encodestr);
-                        column.Header = str;
+                        var tc = new DataGridTemplateColumn();
+                        tc.Header = str;
+                        tc.CellTemplateSelector = new CellTemplateSelector(encodestr, i, false, tag);
+                        tc.CellEditingTemplateSelector = new CellTemplateSelector(encodestr, i, true, tag);
 
-                        Style aStyle = new Style(typeof(TextBlock));
-
-                        var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = i, coloumnName = str } };
-
-                        aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
-
-                        column.ElementStyle = aStyle;
-
-                        columns.Add(column);
+                        columns.Add(tc);
 
                         headerStr[i] = encodestr;
                     }
@@ -268,7 +274,7 @@ namespace ExcelMerge {
                     int rowid = issrc ? status.Diff2RowID1[j] : status.Diff2RowID2[j];
 
                     // 修改过，或者是
-                    if (edited[rowid].Count > 0 || status.diffSheet[j].Any(a => a.Status != DiffStatus.Equal)) {
+                    if (edited[rowid].Count > 0 || status.diffSheet[j].changed) {
        
 
                         var row = sheet.GetRow(rowid);
@@ -291,8 +297,8 @@ namespace ExcelMerge {
                     }
                 }
             }
-
-            ExcelGrid.DataContext = datas;
+            ExcelGrid.ItemsSource = datas;
+            //ExcelGrid.DataContext = datas;
 
             CtxMenu.Items.Clear();
             var item = new MenuItem();
@@ -378,10 +384,10 @@ namespace ExcelMerge {
                 var rowid = rowdata.rowId;
                 var coloumnid = param.columnID;
 
-                if (rowdata.diffstatus != null && rowdata.diffstatus.Count > coloumnid && coloumnid >= 0) {
+                if (rowdata.diffstatus != null && rowdata.diffstatus.diffcells.Count > coloumnid && coloumnid >= 0) {
                     var diffid = rowdata.column2diff[coloumnid];
 
-                    DiffStatus status = rowdata.diffstatus[diffid].Status;
+                    DiffStatus status = rowdata.diffstatus.diffcells[diffid].Status;
 
                     switch (status) {
                         case DiffStatus.Modified:

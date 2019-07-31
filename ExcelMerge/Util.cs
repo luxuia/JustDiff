@@ -12,6 +12,7 @@ using System.Collections.ObjectModel;
 using NetDiff;
 using System.Dynamic;
 using System.IO;
+using System.Windows.Documents;
 
 namespace ExcelMerge {
     class Util {
@@ -201,13 +202,19 @@ namespace ExcelMerge {
         OtherSide, // 另一边的格子修改
     }
 
+    public class SheetRowDiff {
+        public List<DiffResult<string>> diffcells;
+        public List<List<DiffResult<char>>> diffcell_details;
+        public bool changed = false;
+    }
+
     public class SheetDiffStatus {
         public int columnCount1;
         public int columnCount2;
-        public List<DiffResult<string>> diffHead;
+        public SheetRowDiff diffHead;
         public List<DiffResult<string2int>> diffFistColumn;
 
-        public List<List<DiffResult<string>>> diffSheet;
+        public List<SheetRowDiff> diffSheet;
 
         public Dictionary<int, int> rowID2DiffMap1;
         public Dictionary<int, int> rowID2DiffMap2;
@@ -275,7 +282,7 @@ namespace ExcelMerge {
         public string tag;
         public int diffIdx;
 
-        public List<DiffResult<string>> diffstatus;
+        public SheetRowDiff diffstatus;
         public Dictionary<int, int> RowID2DiffMap;
         public Dictionary<int, CellEditMode> CellEdited;
 
@@ -284,8 +291,10 @@ namespace ExcelMerge {
         public override bool TryGetMember(GetMemberBinder binder, out object result) {
             CellData ret;
             if (data.TryGetValue(binder.Name, out ret)) {
-                result = ret.value;
-
+                result = "<Bold> " + ret.value + "<Bold/>";
+                //var block = new TextBlock();
+                //result = new Bold(new Run(ret.value));
+               // result = block;
                 return true;
             }
             result = "";
