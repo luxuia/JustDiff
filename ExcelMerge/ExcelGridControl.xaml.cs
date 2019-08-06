@@ -117,27 +117,6 @@ namespace ExcelMerge {
             public string coloumnName;
         }
 
-        void AddPrefixRowID() {
-            var columns = ExcelGrid.Columns;
-
-            {
-                var column = new DataGridTextColumn();
-
-                column.Binding = new Binding("rowid");
-                column.Header = "行";
-
-                Style aStyle = new Style(typeof(TextBlock));
-
-                var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = -1, coloumnName = "行" } };
-
-                aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
-
-                column.ElementStyle = aStyle;
-
-                columns.Add(column);
-            }
-        }
-
         public void RefreshData() {
             var tag = Tag as string;
             var wrap = MainWindow.instance.books[tag];
@@ -178,11 +157,6 @@ namespace ExcelMerge {
                     var headerkey = sheet.GetRow(1);
                     if (header == null || headerkey == null) return;
 
-                    // header不会空
-                    //                     columnCount = header.Cells.Count;
-                    //                     headerStr = new string[columnCount];
-                    //AddPrefixRowID();
-
                     for (int i = 0; i < columnCount; ++i) {
                         var cell = header.GetCell(i);
                         var cellkey = headerkey.GetCell(i);
@@ -196,19 +170,6 @@ namespace ExcelMerge {
                         }
                         // 第二行+第三行，合起来作为key
                         var encodestr = System.Uri.EscapeDataString(strkey) + "_" + i;// + System.Uri.EscapeDataString(str);
-
-                        //var column = new DataGridTextColumn();
-                        //
-                        //column.Binding = new Binding(encodestr);
-                        //column.Header = str;
-                        //
-                        //Style aStyle = new Style(typeof(TextBlock));
-                        //
-                        //var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = i, coloumnName = str } };
-                        //
-                        //aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
-                        //
-                        //column.ElementStyle = aStyle;
 
                         var tc = new DataGridTemplateColumn();
                         tc.Header = str;
@@ -226,20 +187,13 @@ namespace ExcelMerge {
 
                     for (int i = 0; i < columnCount; ++i) {
                         var str = (i + 1).ToString();
-                        // 新建一列
-                        var column = new DataGridTextColumn();
-                        column.Binding = new Binding(str);
-                        column.Header = str;
 
-                        Style aStyle = new Style(typeof(TextBlock));
-                        // 传下去的参数，当渲染格子的时候，只知道行id，需要通过这里传参数知道列id
-                        var abinding = new Binding() { Converter = new ConvertToBackground(), ConverterParameter = new ConverterParamter() { columnID = i, coloumnName = str } };
+                        var tc = new DataGridTemplateColumn();
+                        tc.Header = str;
+                        tc.CellTemplateSelector = new CellTemplateSelector(str, i, false, tag);
+                        tc.CellEditingTemplateSelector = new CellTemplateSelector(str, i, true, tag);
 
-                        aStyle.Setters.Add(new Setter(TextBlock.BackgroundProperty, abinding));
-
-                        column.ElementStyle = aStyle;
-
-                        columns.Add(column);
+                        columns.Add(tc);
 
                         headerStr[i] = str;
                     }
@@ -374,48 +328,5 @@ namespace ExcelMerge {
             }
         }
     }
-
-    class ConvertToBackground : IValueConverter {
-
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-            var param = (ExcelGridControl.ConverterParamter)parameter;
-            if (value is ExcelData) {
-                var rowdata = (ExcelData)value;
-                var rowid = rowdata.rowId;
-                var coloumnid = param.columnID;
-
-                if (rowdata.diffstatus != null && rowdata.diffstatus.diffcells.Count > coloumnid && coloumnid >= 0) {
-                    var diffid = rowdata.column2diff[coloumnid];
-
-                    DiffStatus status = rowdata.diffstatus.diffcells[diffid].Status;
-
-                    switch (status) {
-                        case DiffStatus.Modified:
-                            return Brushes.Yellow;
-                        case DiffStatus.Deleted:
-                            // 列增删的时候不好处理，不显示影响的格子
-                            if (rowdata.tag == "src")
-                                return Brushes.Gray;
-                            break;
-                        case DiffStatus.Inserted:
-                            // 列增删的时候不好处理，不显示影响的格子
-                            if (rowdata.tag == "dst")
-                                return Brushes.LightGreen;
-                            break;
-                        default:
-                            if (rowdata.CellEdited != null && rowdata.CellEdited.ContainsKey(diffid) && rowdata.CellEdited[diffid] == CellEditMode.Self) {
-                                // 单元格修改
-                                return new SolidColorBrush(Color.FromRgb(160,238,225));
-                            }
-                            return DependencyProperty.UnsetValue;
-                    }
-                }
-            } 
-            return DependencyProperty.UnsetValue;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-            throw new NotImplementedException();
-        }
-    }
+    
 }
