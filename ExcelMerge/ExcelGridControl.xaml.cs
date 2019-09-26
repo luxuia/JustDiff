@@ -73,7 +73,7 @@ namespace ExcelMerge {
 
                 var row = srcSheet.GetRow(rowid);
 
-                if (last_rowid > 0) { 
+                if (last_rowid >= 0) { 
                     if (last_rowid != rowid) {
                         ret += "</TR><TR>";
                     } else {
@@ -326,6 +326,11 @@ namespace ExcelMerge {
             if (e.AddedCells.Count > 0) {
                 var cells = e.AddedCells[0];
             }
+        }
+
+        private void ExcelGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e) {
+            var tag = sender;
+            var ee = e;
         }
     }
     
