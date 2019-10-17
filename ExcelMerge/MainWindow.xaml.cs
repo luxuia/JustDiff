@@ -386,6 +386,20 @@ namespace ExcelMerge {
             return status;
         }
         
+        public void DiffList(string[] difflist) {
+            if (difflist.Length < 2) return;
+
+            var file = difflist[0];
+            string[] vs = new string[difflist.Length - 1];
+            Array.Copy(difflist, 1, vs, 0, difflist.Length - 1);
+
+            var versions = vs.Select((r) => { return int.Parse(r); }).ToList();
+            versions.Sort();
+
+            SrcFile = file;
+
+            DiffUri(versions[0] - 1, versions[versions.Count-1], new Uri("http://m1.svn.ejoy.com/m1/" + file));
+        }
 
         public void Diff(string file1, string file2, bool resetInitFile = true) {
             if (string.IsNullOrEmpty(file1) || string.IsNullOrEmpty(file2)) return;
@@ -506,15 +520,10 @@ namespace ExcelMerge {
             return ProcessHeader.IsChecked == true ? config.HeadCount : 0;
         }
 
-        public void Diff(long revision, long revisionto) {
+        public void DiffUri(long revision, long revisionto, Uri uri) {
             using (SvnClient client = new SvnClient()) {
-                string file = SrcFile;
-                SvnInfoEventArgs info;
-                client.GetInfo(file, out info);
-                var uri = info.Uri;
-
                 var tempDir = System.IO.Path.GetTempPath();
-                var filename = System.IO.Path.GetFileName(SrcFile);
+                var filename = System.IO.Path.GetFileName(uri.LocalPath);
 
                 var file1 = tempDir + revision + "_" + filename;
                 var checkoutArgs = new SvnWriteArgs() { Revision = revision };
@@ -531,6 +540,17 @@ namespace ExcelMerge {
                 _tempFiles.Add(file2);
                 Diff(file1, file2, false);
             }
+        }
+
+        public void Diff(long revision, long revisionto) {
+            Uri uri;
+            using (SvnClient client = new SvnClient()) {
+                string file = SrcFile;
+                SvnInfoEventArgs info;
+                client.GetInfo(file, out info);
+                uri = info.Uri;
+            }
+            DiffUri(revision, revisionto, uri);
         }
     
         public void RefreshCurSheet() {
@@ -589,7 +609,8 @@ namespace ExcelMerge {
 
                 for (int i = 0; i < row0.Cells.Count; ++i) {
                     var s1 = Util.GetCellValue(row0.GetCell(i));
-                    if (string.IsNullOrWhiteSpace(s1)) {
+                    // 起码有两列
+                    if (string.IsNullOrWhiteSpace(s1) && i > 1) {
                         return header;
                     }
                     header.Add((i+1).ToString());
@@ -819,6 +840,10 @@ namespace ExcelMerge {
 
         private void SimpleHeader_Checked(object sender, RoutedEventArgs e) {
             Diff(SrcFile, DstFile);
+        }
+
+        private void SVNVersionBtn_Click(object sender, RoutedEventArgs e) {
+            
         }
     }
 

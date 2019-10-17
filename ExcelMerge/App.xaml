@@ -7,6 +7,7 @@
     <Application.Resources>
         <System:String x:Key="BranchPath">分支路径:</System:String>
         <System:String x:Key="ReversionId">搜索:</System:String>
+        <System:String x:Key="ReversionIdConfirm">确认</System:String>
         <System:String x:Key="ReversionSelect">版本选择:</System:String>
         <System:String x:Key="DiffLabel">对比</System:String>
         <System:String x:Key="ApplyLabel">保存</System:String>
