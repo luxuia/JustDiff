@@ -61,7 +61,8 @@ namespace ExcelMerge {
                         str = cell.StringCellValue.ToString();
                     }
                     else {
-                        str = cell.CellFormula;
+                        str = "(公式)";
+                        //str = cell.CellFormula;
                     }
                     break;
                 case CellType.Numeric:
