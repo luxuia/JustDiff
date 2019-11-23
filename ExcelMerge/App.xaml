@@ -14,5 +14,6 @@
         <System:String x:Key="SimpleHeaderLabel">处理表头</System:String>
 		<System:String x:Key="VersionSearch">单号搜索</System:String>
 		<System:String x:Key="CommitID">单号列表(空格)</System:String>
+        <System:String x:Key="SortKey">关键列</System:String>
     </Application.Resources>
 </Application>

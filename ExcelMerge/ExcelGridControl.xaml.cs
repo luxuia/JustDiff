@@ -47,8 +47,10 @@ namespace ExcelMerge {
             ExcelGrid.InputBindings.Add(new InputBinding(ApplicationCommands.Copy, ApplicationCommands.Copy.InputGestures[0]));
         }
 
+        public bool editing = false;
         private void ExcelGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
             var selectCells = ExcelGrid.SelectedCells;
+            editing = false;
             if (e.EditAction == DataGridEditAction.Commit) {
                 var data = e.EditingElement.DataContext as ExcelData;
                 var el = e.EditingElement as TextBox;
@@ -58,6 +60,12 @@ namespace ExcelMerge {
                     //MainWindow.instance.SetCellValue(el.Text, celldata.cell);
                 }
             }
+        }
+        
+        private void ExcelGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e) {
+            var tag = sender;
+            var ee = e;
+            editing = true;
         }
 
         private void Menu_Save(object sender, ExecutedRoutedEventArgs e) {
@@ -95,10 +103,6 @@ namespace ExcelMerge {
             var selectCells = ExcelGrid.SelectedCells;
             //var text = Clipboard.GetText(TextDataFormat.Html);
             MainWindow.instance.CopyCellsValue(Tag as string, otherTag, selectCells);
-        }
-
-        private void ExcelGridResized(object sender, SizeChangedEventArgs e) {
-
         }
 
         DependencyProperty GetDependencyPropertyByName(Type dependencyObjectType, string dpName) {
@@ -152,19 +156,22 @@ namespace ExcelMerge {
 
                 var needChangeHead = MainWindow.instance.ProcessHeader.IsChecked == true;
                 if (needChangeHead) {
-                    var header = sheet.GetRow(MainWindow.instance.config.ShowLineID-1);
+                    var headershow = sheet.GetRow(MainWindow.instance.config.ShowLineID-1);
+                    var headerkey = sheet.GetRow(MainWindow.instance.config.KeyLienID-1);
 
-                    var headerkey = sheet.GetRow(1);
-                    if (header == null || headerkey == null) return;
+                    if (headershow == null || headerkey == null) return;
 
                     for (int i = 0; i < columnCount; ++i) {
-                        var cell = header.GetCell(i);
+                        var cellshow = headershow.GetCell(i);
                         var cellkey = headerkey.GetCell(i);
 
-                        var str = Util.GetCellValue(cell);
+                        var strshow = Util.GetCellValue(cellshow);
                         var strkey = Util.GetCellValue(cellkey);
+                        if (string.IsNullOrWhiteSpace(strshow)) {
+                            strshow = strkey;
+                        }
 
-                        if (string.IsNullOrWhiteSpace(str) || string.IsNullOrWhiteSpace(strkey)) {
+                        if (string.IsNullOrWhiteSpace(strkey)) {
                             columnCount = i;
                             break;
                         }
@@ -172,7 +179,7 @@ namespace ExcelMerge {
                         var encodestr = System.Uri.EscapeDataString(strkey) + "_" + i;// + System.Uri.EscapeDataString(str);
 
                         var tc = new DataGridTemplateColumn();
-                        tc.Header = str;
+                        tc.Header = strshow;
                         tc.CellTemplateSelector = new CellTemplateSelector(encodestr, i, false, tag);
                         tc.CellEditingTemplateSelector = new CellTemplateSelector(encodestr, i, true, tag);
 
@@ -307,7 +314,7 @@ namespace ExcelMerge {
         private void ExcelGrid_ScrollChanged(object sender, ScrollChangedEventArgs e) {
             var tag = sender;
 
-            if (MainWindow.instance != null)
+            if (MainWindow.instance != null && !editing)
                 MainWindow.instance.OnGridScrollChanged(Tag as string, e);
         }
 
@@ -328,10 +335,6 @@ namespace ExcelMerge {
             }
         }
 
-        private void ExcelGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e) {
-            var tag = sender;
-            var ee = e;
-        }
     }
     
 }

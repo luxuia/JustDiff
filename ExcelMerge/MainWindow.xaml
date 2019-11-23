@@ -35,7 +35,8 @@
                 <Button Name="SVNVersionBtn" Width="50" Content="{DynamicResource ReversionIdConfirm}" Height="25" Margin="5,0" Click="SVNVersionBtn_Click"></Button>
                 <Label Content="{DynamicResource ReversionSelect}"/>
                 <ComboBox Name="SVNRevisionCombo" Width="100" DisplayMemberPath="Revision" SelectedValuePath="ID" SelectionChanged="SVNResivionionList_SelectionChanged"/>
-
+                <Label Content="{DynamicResource SortKey}" />
+                <ComboBox Name="SortKeyCombo" Width="100" DisplayMemberPath="ColumnName" SelectedValuePath="ID" SelectionChanged="SortKeyCombo_SelectionChanged"/>
             </StackPanel>
         </StackPanel>
 

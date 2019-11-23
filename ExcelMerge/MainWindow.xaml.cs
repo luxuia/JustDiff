@@ -30,7 +30,7 @@ namespace ExcelMerge {
     public partial class MainWindow : Window {
 
         public static MainWindow instance;
-
+        //"dst","src"
         public Dictionary<string, WorkBookWrap> books = new Dictionary<string, WorkBookWrap>();
 
         public Dictionary<string, SheetDiffStatus> sheetsDiff = new Dictionary<string, SheetDiffStatus>();
@@ -53,6 +53,8 @@ namespace ExcelMerge {
             public int HeadCount = 3;
 
             public int ShowLineID = 3;
+
+            public int KeyLienID = 2;
         }
 
         static string ConfigPath = "config.json";
@@ -65,8 +67,7 @@ namespace ExcelMerge {
             if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this)) {
                 return;
             }
-
-
+            
             var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, ConfigPath);
             if (!File.Exists(path)) {
                 config = new Config();
@@ -280,7 +281,7 @@ namespace ExcelMerge {
         }
 
         SheetDiffStatus DiffSheet(ISheet src, ISheet dst, SheetDiffStatus status = null) {
-            status = status??new SheetDiffStatus();
+            status = status??new SheetDiffStatus() { sortKey = 0 };
 
             bool changed = false;
 
@@ -303,7 +304,7 @@ namespace ExcelMerge {
             books["src"].SheetValideColumn[src.SheetName] = head1.Count;
             books["dst"].SheetValideColumn[dst.SheetName] = head2.Count;
             
-            status.diffFistColumn = GetIDDiffList(src, dst, 1);
+            status.diffFistColumn = GetIDDiffList(src, dst, 1, false, status.sortKey);
 
             changed = changed || status.diffFistColumn.Any(a => a.Status != DiffStatus.Equal);
 
@@ -375,10 +376,6 @@ namespace ExcelMerge {
                 status.diffSheet.Add(rowdiff);
                 
                 changed = changed || rowdiff.changed;
-
-                if (changed) {
-                    changed = true;
-                }
             }
 
             status.changed = changed;
@@ -511,8 +508,10 @@ namespace ExcelMerge {
             comboidx = dst.ItemID2ComboIdx[dst.sheet];
             DstFileSheetsCombo.SelectedItem = dst.sheetCombo[comboidx];
 
-            DstDataGrid.RefreshData();
-            SrcDataGrid.RefreshData();
+            //DstDataGrid.RefreshData();
+            //SrcDataGrid.RefreshData();
+
+            //OnSheetChanged();
         }
 
         public int DiffStartIdx() {
@@ -620,7 +619,7 @@ namespace ExcelMerge {
         }
 
         // 把第一列认为是id列，检查增删, <value, 行id>
-        List<DiffResult<string2int>> GetIDDiffList(ISheet sheet1, ISheet sheet2, int checkCellCount, bool addRowID = false) {
+        List<DiffResult<string2int>> GetIDDiffList(ISheet sheet1, ISheet sheet2, int checkCellCount, bool addRowID = false, int startCheckCell=0) {
             var list1 = new List<string2int>();
             var list2 = new List<string2int>();
 
@@ -637,7 +636,7 @@ namespace ExcelMerge {
                 };
  
                 var val = "";
-                for (var j = 0; j < checkCellCount; ++j) {
+                for (var j = startCheckCell; j < startCheckCell+checkCellCount; ++j) {
                     val += Util.GetCellValue(row.GetCell(j));
                 }
                 var hash_val = val;
@@ -646,10 +645,10 @@ namespace ExcelMerge {
                 }
                 if (nameHash.Contains(hash_val)) {
                     if (checkCellCount < 6) {
-                        return GetIDDiffList(sheet1, sheet2, checkCellCount + 1, addRowID);
+                        return GetIDDiffList(sheet1, sheet2, checkCellCount + 1, addRowID, startCheckCell);
                     } else {
                         // 已经找不到能作为key的了。把id和行号连一块
-                        return GetIDDiffList(sheet1, sheet2, 1, true);
+                        return GetIDDiffList(sheet1, sheet2, 1, true, startCheckCell);
                     }
                 } 
 
@@ -672,7 +671,7 @@ namespace ExcelMerge {
                     break;
                 }
                 var val = "";
-                for (var j = 0; j < checkCellCount; ++j) {
+                for (var j = startCheckCell; j < startCheckCell+ checkCellCount; ++j) {
                     val += Util.GetCellValue(row.GetCell(j));
                 }
                 var hash_val = val;
@@ -681,11 +680,11 @@ namespace ExcelMerge {
                 }
                 if (nameHash.Contains(hash_val)) {
                     if (checkCellCount < 6) {
-                        return GetIDDiffList(sheet1, sheet2, checkCellCount + 1, addRowID);
+                        return GetIDDiffList(sheet1, sheet2, checkCellCount + 1, addRowID, startCheckCell);
                     }
                     else {
                         // 已经找不到能作为key的了。把id和行号连一块
-                        return GetIDDiffList(sheet1, sheet2, 1, true);
+                        return GetIDDiffList(sheet1, sheet2, 1, true, startCheckCell);
                     }
                 }
                 nameHash.Add(hash_val);
@@ -737,9 +736,26 @@ namespace ExcelMerge {
         }
 
         void OnSheetChanged() {
-            // TODO这里检查diff标记，清理book1
+            List<SheetSortKeyCombo> keys = new List<SheetSortKeyCombo>();
 
+            var sheet = books["src"].GetCurSheet();
+            var src_sheet = books["src"].sheetname;
+            var sheetdata = sheetsDiff[src_sheet];
 
+            var list = new List<string>();
+            if (sheet.GetRow(1) != null) {
+                var row = sheet.GetRow(1);
+                var columnCount = books["src"].SheetValideColumn[sheet.SheetName];
+                for (int i = 0; i < columnCount; ++i) {
+                    list.Add(Util.GetCellValue(row.GetCell(i)));
+                }
+            }
+
+            for (var idx = 0; idx < list.Count; ++idx) {
+                keys.Add(new SheetSortKeyCombo() { ColumnName = list[idx], ID = idx });
+            }
+            SortKeyCombo.ItemsSource = keys;
+            SortKeyCombo.SelectedIndex = 0;
         }
 
         private void DstFileSheetsCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) {
@@ -753,10 +769,10 @@ namespace ExcelMerge {
                     if (idx >= 0) {
                         SrcFileSheetsCombo.SelectedItem = books["src"].sheetCombo[idx];
                     }
-                } else {
-                    OnSheetChanged();
-                }
+                } 
+
                 DstDataGrid.RefreshData();
+                OnSheetChanged();
             }
         }
 
@@ -770,17 +786,16 @@ namespace ExcelMerge {
                     if (idx >= 0) {
                         DstFileSheetsCombo.SelectedItem = books["dst"].sheetCombo[idx];
                     }
-                } else {
-                    OnSheetChanged();
                 }
 
                 SrcDataGrid.RefreshData();
+                OnSheetChanged();
             }
         }
 
         private void SVNResivionionList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             var selection = e.AddedItems[0] as SvnRevisionCombo;
-            SVNRevisionCombo.Width = selection.Revision.Length*10;
+            SVNRevisionCombo.Width = Math.Min(selection.Revision.Length*10, 250);
 
             Diff(selection.ID - 1, selection.ID);
         }
@@ -844,6 +859,21 @@ namespace ExcelMerge {
 
         private void SVNVersionBtn_Click(object sender, RoutedEventArgs e) {
             
+        }
+
+        private void SortKeyCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+
+            var src_sheet = books["src"].sheetname;
+            var sheetdata = sheetsDiff[src_sheet];
+
+            if (e.AddedItems.Count > 0) {
+                var sortkey = e.AddedItems[0] as SheetSortKeyCombo;
+                if (sortkey != null && sheetdata.sortKey != sortkey.ID) {
+                    sheetdata.sortKey = sortkey.ID;
+
+                    ReDiff();
+                }
+            }
         }
     }
 

@@ -153,7 +153,9 @@ namespace ExcelMerge {
 
     public class WorkBookWrap {
         public IWorkbook book;
+
         private int _sheet;
+        // 当前的显示的sheet
         public int sheet {
             set {
                 _sheet = Math.Max( Math.Min( value, book.NumberOfSheets-1), 0);
@@ -213,6 +215,9 @@ namespace ExcelMerge {
         public int columnCount1;
         public int columnCount2;
         public SheetRowDiff diffHead;
+
+        public int sortKey;
+
         public List<DiffResult<string2int>> diffFistColumn;
 
         public List<SheetRowDiff> diffSheet;
@@ -251,6 +256,10 @@ namespace ExcelMerge {
         public int ID { get; set; }
     }
 
+    public class SheetSortKeyCombo {
+        public string ColumnName { get; set; }
+        public int ID { get; set; }
+    }
 
     public class SheetIDComparer : IEqualityComparer<string2int> {
         public bool Equals(string2int a, string2int b) {
