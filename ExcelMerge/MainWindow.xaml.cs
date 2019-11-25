@@ -812,7 +812,7 @@ namespace ExcelMerge {
 
         private void SVNResivionionList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             var selection = e.AddedItems[0] as SvnRevisionCombo;
-            SVNRevisionCombo.Width = Math.Min(selection.Revision.Length*10, 250);
+            SVNRevisionCombo.Width = Math.Min(selection.Revision.Length*10, 440);
 
             Diff(selection.ID - 1, selection.ID);
         }

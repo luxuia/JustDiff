@@ -6,7 +6,7 @@
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:local="clr-namespace:ExcelMerge"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="1000"
+        Title="MainWindow" Height="600" Width="1200"
         Closing="Window_Closing">
     <Grid>
         <Grid.RowDefinitions>
@@ -25,10 +25,12 @@
                 <Label Name="SrcFilePath" >c:/dir/to/path.xls</Label>
                 <ComboBox Name="SrcFileSheetsCombo" Width="80" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="SrcFileSheetsCombo_SelectionChanged"></ComboBox>
             </StackPanel>
+            <!--
             <DockPanel  Grid.Row="1" Grid.Column="0">
                 <Label Content="{DynamicResource BranchPath}"/>
                 <TextBox Name="BranchPath" Height="20" HorizontalAlignment="Stretch" />
             </DockPanel>
+            -->
             <StackPanel Orientation="Horizontal">
                 <Label Content="{DynamicResource ReversionId}"/>
                 <TextBox Name="SVNVerson" Width="60" Height="20" HorizontalContentAlignment="Right"/>
