@@ -55,6 +55,10 @@ namespace ExcelMerge {
             public int ShowLineID = 3;
 
             public int KeyLienID = 2;
+
+            public bool NoHead = false;
+
+            public int DefaultKeyID = 0;
         }
 
         static string ConfigPath = "config.json";
@@ -79,6 +83,10 @@ namespace ExcelMerge {
 
             //dirWindow = new DirectoryDifferWindow();
             //dirWindow.Show();
+            if (config.NoHead) {
+                ProcessHeader.IsChecked = false;
+            }
+
         }
 
         public void ShowDirectoryWindow(string[] dirs, string tag) {
@@ -95,6 +103,7 @@ namespace ExcelMerge {
         // load进来单个文件的情况
         public void OnFileLoaded(string file, string tag, FileOpenType type, int sheet = 0) {
             file = file.Replace("\\", "/");
+
             foreach (var reg in config.NoHeadPaths) {
                 if (System.Text.RegularExpressions.Regex.Match(file, reg).Length > 0) {
                     ProcessHeader.IsChecked = false;
@@ -281,7 +290,7 @@ namespace ExcelMerge {
         }
 
         SheetDiffStatus DiffSheet(ISheet src, ISheet dst, SheetDiffStatus status = null) {
-            status = status??new SheetDiffStatus() { sortKey = 0 };
+            status = status??new SheetDiffStatus() { sortKey = config.DefaultKeyID };
 
             bool changed = false;
 
@@ -700,12 +709,12 @@ namespace ExcelMerge {
             });
 
             var option = new DiffOption<string2int>();
-            option.Optimize = false;
             option.EqualityComparer = new SheetIDComparer();
             var result = DiffUtil.Diff(list1, list2, option);
             //var optimize = result.ToList();// 
-            var optimize = DiffUtil.OptimizeCaseDeletedFirst(result);
-            return optimize.ToList();
+            // id列不应该把delete/add优化成modify
+           // var optimize = DiffUtil.OptimizeCaseDeletedFirst(result);
+            return result.ToList();
         }
 
         List<DiffResult<string>> DiffSheetRow(ISheet sheet1, int row1, ISheet sheet2, int row2, SheetDiffStatus status) {
@@ -743,11 +752,19 @@ namespace ExcelMerge {
             var sheetdata = sheetsDiff[src_sheet];
 
             var list = new List<string>();
-            if (sheet.GetRow(1) != null) {
-                var row = sheet.GetRow(1);
+            if (ProcessHeader.IsChecked == true) {
+                if (sheet.GetRow(1) != null) {
+                    var row = sheet.GetRow(1);
+                    var columnCount = books["src"].SheetValideColumn[sheet.SheetName];
+                    for (int i = 0; i < columnCount; ++i) {
+                        list.Add(Util.GetCellValue(row.GetCell(i)));
+                    }
+                }
+            }
+            else {
                 var columnCount = books["src"].SheetValideColumn[sheet.SheetName];
                 for (int i = 0; i < columnCount; ++i) {
-                    list.Add(Util.GetCellValue(row.GetCell(i)));
+                    list.Add((i+1).ToString());
                 }
             }
 
@@ -755,7 +772,7 @@ namespace ExcelMerge {
                 keys.Add(new SheetSortKeyCombo() { ColumnName = list[idx], ID = idx });
             }
             SortKeyCombo.ItemsSource = keys;
-            SortKeyCombo.SelectedIndex = 0;
+            SortKeyCombo.SelectedIndex = config.DefaultKeyID;
         }
 
         private void DstFileSheetsCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) {
@@ -807,8 +824,10 @@ namespace ExcelMerge {
             } else if (tag == "dst") {
                 view = Util.GetVisualChild<ScrollViewer>(SrcDataGrid);
             }
-            view.ScrollToVerticalOffset(e.VerticalOffset);
-            view.ScrollToHorizontalOffset(e.HorizontalOffset);
+            if (e.VerticalChange != 0)
+                view.ScrollToVerticalOffset(e.VerticalOffset);
+            if (e.HorizontalChange != 0)
+                view.ScrollToHorizontalOffset(e.HorizontalOffset);
         }
 
         public void OnSelectGridRow(string tag, int rowid) {
