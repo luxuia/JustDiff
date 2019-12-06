@@ -562,16 +562,20 @@ namespace ExcelMerge {
         }
     
         public void RefreshCurSheet() {
-            Dispatcher.BeginInvoke(new Action(ReDiff));
+            Dispatcher.BeginInvoke(new Action(ReDiffCurSheet));
         }
 
-        void ReDiff() {
+        void ReDiffCurSheet() {
             var src_sheet = books["src"].sheetname;
             
             DiffSheet(books["src"].GetCurSheet(), books["dst"].GetCurSheet(), sheetsDiff[src_sheet]);
   
             DstDataGrid.RefreshData();
             SrcDataGrid.RefreshData();
+        }
+
+        public void ReDiffFile() {
+            Diff(SrcFile, DstFile);
         }
 
         public void OnCellEdited(string tag, int rowid, int columnid, CellEditMode mode) {
@@ -749,6 +753,8 @@ namespace ExcelMerge {
 
             var sheet = books["src"].GetCurSheet();
             var src_sheet = books["src"].sheetname;
+            if (!sheetsDiff.ContainsKey(src_sheet)) return;
+
             var sheetdata = sheetsDiff[src_sheet];
 
             var list = new List<string>();
@@ -890,7 +896,7 @@ namespace ExcelMerge {
                 if (sortkey != null && sheetdata.sortKey != sortkey.ID) {
                     sheetdata.sortKey = sortkey.ID;
 
-                    ReDiff();
+                    ReDiffCurSheet();
                 }
             }
         }

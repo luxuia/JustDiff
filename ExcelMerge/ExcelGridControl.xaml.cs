@@ -237,7 +237,6 @@ namespace ExcelMerge {
                     // 修改过，或者是
                     if (edited[rowid].Count > 0 || status.diffSheet[j].changed) {
        
-
                         var row = sheet.GetRow(rowid);
 
                         var data = new ExcelData();
@@ -274,7 +273,9 @@ namespace ExcelMerge {
             if (wb != null) {
                 var window = MainWindow.instance;
 
-                window.books.Clear();
+                if (tag == "src") {
+                    window.books.Clear();
+                }
                 window.OnFileLoaded(file, tag, type);
                 RefreshData();
             }
@@ -294,6 +295,8 @@ namespace ExcelMerge {
 
                         if (files.Length > 1) {
                             HandleFileOpen(files[1], FileOpenType.Drag, otherTag);
+
+                            MainWindow.instance.ReDiffFile();
                         }
                     }
                 }
