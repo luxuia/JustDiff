@@ -639,7 +639,7 @@ namespace ExcelMerge {
             var nameHash = new HashSet<string>();
 
             var startIdx = DiffStartIdx();
-
+            bool allNum = checkCellCount==1;
             // 尝试找一个id不会重复的前几列的值作为key
             for (int i = startIdx; ; i++) {
                 var row = sheet1.GetRow(i);
@@ -650,6 +650,9 @@ namespace ExcelMerge {
  
                 var val = "";
                 for (var j = startCheckCell; j < startCheckCell+checkCellCount; ++j) {
+                    if (row.GetCell(j) == null || row.GetCell(j).CellType != CellType.Numeric) {
+                        allNum = false;
+                    }
                     val += Util.GetCellValue(row.GetCell(j));
                 }
                 var hash_val = val;
@@ -669,13 +672,7 @@ namespace ExcelMerge {
 
                 list1.Add(new string2int(val, i));
             }
-           list1.Sort(delegate (string2int a, string2int b) {
-               var cmp = a.Key.CompareTo(b.Key);
-               if (cmp == 0) {
-                   return a.Value.CompareTo(b.Value);
-               }
-               return cmp;
-           });
+
             nameHash.Clear();
             for (int i = startIdx; ; i++) {
                 var row = sheet2.GetRow(i);
@@ -685,6 +682,9 @@ namespace ExcelMerge {
                 }
                 var val = "";
                 for (var j = startCheckCell; j < startCheckCell+ checkCellCount; ++j) {
+                    if (row.GetCell(j) == null || row.GetCell(j).CellType != CellType.Numeric) {
+                        allNum = false;
+                    }
                     val += Util.GetCellValue(row.GetCell(j));
                 }
                 var hash_val = val;
@@ -704,8 +704,27 @@ namespace ExcelMerge {
 
                 list2.Add(new string2int(val, i));
             }
+            list1.Sort(delegate (string2int a, string2int b) {
+                int cmp = 0;
+                if (allNum) {
+                    cmp = Double.Parse( a.Key) .CompareTo(Double.Parse(b.Key));
+                } else {
+                    cmp = a.Key.CompareTo(b.Key);
+                }
+                
+                if (cmp == 0) {
+                    return a.Value.CompareTo(b.Value);
+                }
+                return cmp;
+            });
             list2.Sort(delegate (string2int a, string2int b) {
-                var cmp = a.Key.CompareTo(b.Key);
+                int cmp = 0;
+                if (allNum) {
+                    cmp = Double.Parse(a.Key).CompareTo(Double.Parse(b.Key));
+                }
+                else {
+                    cmp = a.Key.CompareTo(b.Key);
+                }
                 if (cmp == 0) {
                     return a.Value.CompareTo(b.Value);
                 }
@@ -832,7 +851,7 @@ namespace ExcelMerge {
             }
             if (e.VerticalChange != 0)
                 view.ScrollToVerticalOffset(e.VerticalOffset);
-            if (e.HorizontalChange != 0)
+            else if (e.HorizontalChange != 0)
                 view.ScrollToHorizontalOffset(e.HorizontalOffset);
         }
 
