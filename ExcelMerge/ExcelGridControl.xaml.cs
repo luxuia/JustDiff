@@ -157,7 +157,7 @@ namespace ExcelMerge {
                 var needChangeHead = MainWindow.instance.ProcessHeader.IsChecked == true;
                 if (needChangeHead) {
                     var headershow = sheet.GetRow(MainWindow.instance.config.ShowLineID-1);
-                    var headerkey = sheet.GetRow(MainWindow.instance.config.KeyLienID-1);
+                    var headerkey = sheet.GetRow(MainWindow.instance.config.KeyLineID-1);
 
                     if (headershow == null || headerkey == null) return;
 

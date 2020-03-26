@@ -54,11 +54,13 @@ namespace ExcelMerge {
 
             public int ShowLineID = 3;
 
-            public int KeyLienID = 2;
+            public int KeyLineID = 2;
 
             public bool NoHead = false;
 
             public int DefaultKeyID = 0;
+
+            public int EmptyLine = 0;
         }
 
         static string ConfigPath = "config.json";
@@ -640,12 +642,17 @@ namespace ExcelMerge {
 
             var startIdx = DiffStartIdx();
             bool allNum = checkCellCount==1;
+            int ignoreEmptyLine = config.EmptyLine;
             // 尝试找一个id不会重复的前几列的值作为key
             for (int i = startIdx; ; i++) {
                 var row = sheet1.GetRow(i);
                 if (row == null || !Util.CheckValideRow(row)) {
-                    books["src"].SheetValideRow[sheet1.SheetName] = i;
-                    break;
+                    if (ignoreEmptyLine-- > 0) {
+                        continue;
+                    } else {
+                        books["src"].SheetValideRow[sheet1.SheetName] = i;
+                        break;
+                    }
                 };
  
                 var val = "";
@@ -674,11 +681,17 @@ namespace ExcelMerge {
             }
 
             nameHash.Clear();
+            ignoreEmptyLine = config.EmptyLine;
             for (int i = startIdx; ; i++) {
                 var row = sheet2.GetRow(i);
                 if (row == null || !Util.CheckValideRow(row)) {
-                    books["dst"].SheetValideRow[sheet2.SheetName] = i;
-                    break;
+                    if (ignoreEmptyLine-- > 0) {
+                        continue;
+                    }
+                    else {
+                        books["dst"].SheetValideRow[sheet2.SheetName] = i;
+                        break;
+                    }
                 }
                 var val = "";
                 for (var j = startCheckCell; j < startCheckCell+ checkCellCount; ++j) {
@@ -776,10 +789,12 @@ namespace ExcelMerge {
 
             var sheetdata = sheetsDiff[src_sheet];
 
+           
             var list = new List<string>();
             if (ProcessHeader.IsChecked == true) {
-                if (sheet.GetRow(1) != null) {
-                    var row = sheet.GetRow(1);
+                int namekey = config.KeyLineID - 1;
+                if (sheet.GetRow(namekey) != null) {
+                    var row = sheet.GetRow(namekey);
                     var columnCount = books["src"].SheetValideColumn[sheet.SheetName];
                     for (int i = 0; i < columnCount; ++i) {
                         list.Add(Util.GetCellValue(row.GetCell(i)));
