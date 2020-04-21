@@ -37,6 +37,8 @@ namespace ExcelMerge {
         
         public List<DiffResult<SheetNameCombo>> diffSheetName;
 
+        public Dictionary<string, Dictionary<int, ExcelData>> excelGridData = new Dictionary<string, Dictionary<int, ExcelData>>();
+
 
         public string SrcFile;
         public string DstFile;
@@ -306,11 +308,12 @@ namespace ExcelMerge {
 
             changed = changed || optimized.Any(a => a.Status != DiffStatus.Equal);
 
-            status.diffHead = new SheetRowDiff() { diffcells = optimized.ToList() };
+            var diffhead = optimized.ToList();
+            status.diffHead = new SheetRowDiff() { diffcells = diffhead };
             status.column2diff1 = new Dictionary<int, int[]>();
             status.column2diff2 = new Dictionary<int, int[]>();
-            status.column2diff1[0] = getColumn2Diff(status.diffHead.diffcells, true);
-            status.column2diff2[0] = getColumn2Diff(status.diffHead.diffcells, false);
+            status.column2diff1[0] = getColumn2Diff(diffhead, true);
+            status.column2diff2[0] = getColumn2Diff(diffhead, false);
 
             books["src"].SheetValideColumn[src.SheetName] = head1.Count;
             books["dst"].SheetValideColumn[dst.SheetName] = head2.Count;
@@ -776,6 +779,9 @@ namespace ExcelMerge {
             //var optimized = diff.ToList();// DiffUtil.OptimizeCaseDeletedFirst(diff);
             var optimized = DiffUtil.OptimizeCaseDeletedFirst(diff);
             optimized = DiffUtil.OptimizeCaseInsertedFirst(optimized);
+            var tlist = optimized.ToList();
+            optimized = DiffUtil.OptimizeShift(tlist, false);
+            optimized = DiffUtil.OptimizeShift(optimized, true);
 
             return optimized.ToList();
         }

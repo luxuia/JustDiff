@@ -36,8 +36,17 @@ namespace ExcelMerge {
                     var rowdiff = rowdata.diffstatus;
                     if (rowdiff != null && rowdiff.diffcells.Count > ColumnID && ColumnID >= 0) {
                         var diffid = rowdata.column2diff[ColumnID];
-
+                        var diffresult = rowdiff.diffcells[diffid];
                         DiffStatus status = rowdiff.diffcells[diffid].Status;
+                        //var src_rowdata = MainWindow.instance.excelGridData["src"];
+                        //if (rowdata.tag == "dst" && status == DiffStatus.Equal && src_rowdata != null && src_rowdata.ContainsKey(rowid)) {
+                        //    var cur_value = rowdata.data[Binder].value;
+                        //
+                        //    var src_value = src_rowdata[rowid].data[Binder].value;
+                        //    if (cur_value != src_value) {
+                        //        status = DiffStatus.Modified;
+                        //    }
+                        //}
                         var diff_detail = rowdiff.diffcell_details != null ? rowdiff.diffcell_details[diffid]:null;
 
                         switch (status) {
@@ -74,7 +83,8 @@ namespace ExcelMerge {
                                     if (diff_cell.Status == DiffStatus.Inserted && tag == "src")
                                         continue;
                                     FrameworkElementFactory textBlock = new FrameworkElementFactory(typeof(TextBlock));
-                                    textBlock.SetValue(TextBlock.TextProperty, tag == "dst" ? diff_cell.Obj2.ToString(): diff_cell.Obj1.ToString());
+                                    var text = tag == "dst" ? diff_cell.Obj2.ToString() : diff_cell.Obj1.ToString();
+                                    textBlock.SetValue(TextBlock.TextProperty, text);
                                    
                                     stackPanel.AppendChild(textBlock);
                                     if (diff_cell.Status == DiffStatus.Deleted) {

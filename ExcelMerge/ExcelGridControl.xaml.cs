@@ -133,6 +133,8 @@ namespace ExcelMerge {
 
             //var datas = new ObservableCollection<ExcelData>();
             var datas = new List<ExcelData>();
+            var data_maps = new Dictionary<int, ExcelData>();
+            MainWindow.instance.excelGridData[tag] = data_maps;
 
             if (MainWindow.instance.diffSheetName != null) {
                 var columns = ExcelGrid.Columns;
@@ -226,6 +228,7 @@ namespace ExcelMerge {
                         }
 
                         datas.Add(data);
+                        data_maps[data.rowId] = data;
                     }
                 }
 
@@ -254,6 +257,7 @@ namespace ExcelMerge {
                         }
 
                         datas.Add(data);
+                        data_maps[data.rowId] = data;
                     }
                 }
             }

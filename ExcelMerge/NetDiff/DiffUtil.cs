@@ -103,6 +103,57 @@ namespace NetDiff
             */
         }
 
+        public static IEnumerable<DiffResult<T>> OptimizeShift<T>(IEnumerable<DiffResult<T>> diffResults, bool deleteFirst = true) {
+            var currentStatus = deleteFirst ? DiffStatus.Deleted : DiffStatus.Inserted;
+            var nextStatus = deleteFirst ? DiffStatus.Inserted : DiffStatus.Deleted;
+
+            var ret_list = new List<DiffResult<T>>();
+            //var queue = new Queue<DiffResult<T>>(diffResults);
+            var list = diffResults.ToList();
+
+            int j = 0;
+            int optCount = 0;
+            for (var i = 0; i < list.Count;) {
+                j = i + 1;
+                optCount = 0;
+
+
+                if (list[i].Status == currentStatus) {
+                    while (j < list.Count && list[j].Status == currentStatus) {
+                        j++;
+                    }
+                    while (j + optCount < list.Count && list[j + optCount].Status != nextStatus) {
+                        optCount++;
+                    }
+                }
+
+                if (j + optCount >= list.Count || list[i].Status != currentStatus) {
+                    while (i < j) {
+                        ret_list.Add(list[i]);
+                        i++;
+                    }
+                } else {
+                    while (i < j-1) {
+                        ret_list.Add(list[i]);
+                        i++;
+                    }
+
+                    
+                    while (i < j + optCount) {
+                        var obj1 = deleteFirst ? list[i].Obj1 : list[i + 1].Obj1;
+                        var obj2 = deleteFirst ? list[i + 1].Obj2 : list[i].Obj2;
+                        var status = obj2.Equals(obj1) ? DiffStatus.Equal : DiffStatus.Modified;
+                        ret_list.Add(new DiffResult<T>(obj1, obj2, status));
+                        i++;
+                    }
+                    i += 1;
+
+                }
+            }
+            return ret_list;
+        }
+
+
         private static IEnumerable<DiffResult<T>> MakeResults<T>(IEnumerable<Point> waypoints, IEnumerable<T> seq1, IEnumerable<T> seq2, DiffOption<T> option)
         {
             var array1 = seq1.ToArray();
