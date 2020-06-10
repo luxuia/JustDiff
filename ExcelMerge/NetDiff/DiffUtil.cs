@@ -142,6 +142,12 @@ namespace NetDiff
                     while (i < j + optCount) {
                         var obj1 = deleteFirst ? list[i].Obj1 : list[i + 1].Obj1;
                         var obj2 = deleteFirst ? list[i + 1].Obj2 : list[i].Obj2;
+                        if (obj1 == null) {
+                            obj1 = (T)(object)string.Empty;
+                        }
+                        if (obj2 == null) {
+                            obj2 = (T)(object)string.Empty;
+                        }
                         var status = obj2.Equals(obj1) ? DiffStatus.Equal : DiffStatus.Modified;
                         ret_list.Add(new DiffResult<T>(obj1, obj2, status));
                         i++;
