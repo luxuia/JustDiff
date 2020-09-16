@@ -15,12 +15,12 @@ using System.Windows.Shapes;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using SharpSvn;
-using SharpSvn.UI;
 using System.Collections.ObjectModel;
 using NetDiff;
 using string2int = System.Collections.Generic.KeyValuePair<string, int>;
 using System.IO;
 using Newtonsoft.Json;
+using Microsoft.Win32;
 
 namespace ExcelMerge {
  
@@ -91,6 +91,27 @@ namespace ExcelMerge {
                 ProcessHeader.IsChecked = false;
             }
 
+            try {
+                var key = Registry.ClassesRoot.CreateSubKey(@"xlsmerge");
+                key = Registry.ClassesRoot.OpenSubKey("xlsmerge", true);
+                key.SetValue("URL Protocol", "");
+                key.SetValue(null, "URL:xlsmerge");
+                key.Close();
+                key = Registry.ClassesRoot.CreateSubKey(@"xlsmerge\shell\open\command");
+                key = Registry.ClassesRoot.OpenSubKey(@"xlsmerge\shell\open\command", true);
+                var dir = System.AppDomain.CurrentDomain.BaseDirectory;
+                dir.Replace("/", "\\");
+                dir = string.Format("\"{0}ExcelMerge.exe\" \"%1\"", dir);
+                key.SetValue(null, dir);
+                key.Close();
+            } catch {
+
+            } finally {
+                var key = Registry.ClassesRoot.OpenSubKey(@"xlsmerge\shell\open\command");
+                if (key != null) {
+                    Title = "ExcelMerge " + "[已绑定]";
+                }
+            }
         }
 
         public void ShowDirectoryWindow(string[] dirs, string tag) {
