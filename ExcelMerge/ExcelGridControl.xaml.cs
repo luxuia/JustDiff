@@ -319,7 +319,7 @@ namespace ExcelMerge {
 
             if (item != null) { 
                 row.Header = (item.rowId+1).ToString();
-                row.Height = item.maxLineCount * 17;
+                row.Height = item.maxLineCount * 15+5;
             }
             //row.Header = ite
         }
