@@ -109,7 +109,9 @@ namespace ExcelMerge {
 
                 } else {
                     FrameworkElementFactory textBlock = new FrameworkElementFactory(typeof(TextBox));
-                    textBlock.SetValue(TextBox.TextProperty, rowdata.data[Binder].value);
+                    if (rowdata.data.ContainsKey(Binder)) {
+                        textBlock.SetValue(TextBox.TextProperty, rowdata.data[Binder].value);
+                    }
                     return new DataTemplate() { VisualTree = textBlock };
                 }
 

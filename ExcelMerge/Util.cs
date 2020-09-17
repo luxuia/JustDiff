@@ -228,6 +228,8 @@ namespace ExcelMerge {
         public Dictionary<int, int> Diff2RowID1;
         public Dictionary<int, int> Diff2RowID2;
 
+        public Dictionary<int, int> DiffMaxLineCount;
+
         public Dictionary<int, Dictionary<int, CellEditMode>> RowEdited1;
         public Dictionary<int, Dictionary<int, CellEditMode>> RowEdited2;
 
@@ -291,6 +293,8 @@ namespace ExcelMerge {
         public int rowId;
         public string tag;
         public int diffIdx;
+        public int maxLineCount=1;
+
 
         public SheetRowDiff diffstatus;
         public Dictionary<int, int> RowID2DiffMap;
@@ -301,7 +305,8 @@ namespace ExcelMerge {
         public override bool TryGetMember(GetMemberBinder binder, out object result) {
             CellData ret;
             if (data.TryGetValue(binder.Name, out ret)) {
-                result = "<Bold> " + ret.value + "<Bold/>";
+                //result = "<Bold> " + ret.value + "<Bold/>";
+                result = ret.value;
                 //var block = new TextBlock();
                 //result = new Bold(new Run(ret.value));
                // result = block;

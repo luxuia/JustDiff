@@ -163,6 +163,7 @@ namespace ExcelMerge {
 
                     if (headershow == null || headerkey == null) return;
 
+                    int linecount = 0;
                     for (int i = 0; i < columnCount; ++i) {
                         var cellshow = headershow.GetCell(i);
                         var cellkey = headerkey.GetCell(i);
@@ -179,6 +180,7 @@ namespace ExcelMerge {
                         }
                         // 第二行+第三行，合起来作为key
                         var encodestr = System.Uri.EscapeDataString(strkey) + "_" + i;// + System.Uri.EscapeDataString(str);
+                        linecount = Math.Max(linecount, strshow.Count((c) => { return c == '\n'; })+1);
 
                         var tc = new DataGridTemplateColumn();
                         tc.Header = strshow;
@@ -189,9 +191,9 @@ namespace ExcelMerge {
 
                         headerStr[i] = encodestr;
                     }
+                    ExcelGrid.ColumnHeaderHeight = linecount * 25;
                 }
                 else {
-
                     //AddPrefixRowID();
 
                     for (int i = 0; i < columnCount; ++i) {
@@ -206,6 +208,7 @@ namespace ExcelMerge {
 
                         headerStr[i] = str;
                     }
+                    ExcelGrid.ColumnHeaderHeight = 25;
                 }
 
                 if (needChangeHead) {
@@ -224,9 +227,10 @@ namespace ExcelMerge {
 
                         for (int i = 0; i < columnCount; ++i) {
                             var cell = row.GetCell(i);
-                            data.data[headerStr[i]] = new CellData() { value = Util.GetCellValue(cell), cell = cell };
+                            var value = Util.GetCellValue(cell);
+                            data.data[headerStr[i]] = new CellData() { value = value,  cell = cell };
                         }
-
+                        data.maxLineCount = status.DiffMaxLineCount[j];
                         datas.Add(data);
                         data_maps[data.rowId] = data;
                     }
@@ -253,8 +257,10 @@ namespace ExcelMerge {
                         data.data["rowid"] = new CellData() { value = (rowid+1).ToString() };
                         for (int i = 0; i < columnCount; ++i) {
                             var cell = row != null ? row.GetCell(i):null;
-                            data.data[headerStr[i]] = new CellData() { value = Util.GetCellValue(cell), cell = cell};
+                            var value = Util.GetCellValue(cell);
+                            data.data[headerStr[i]] = new CellData() { value = value, cell = cell};
                         }
+                        data.maxLineCount = status.DiffMaxLineCount[j];
 
                         datas.Add(data);
                         data_maps[data.rowId] = data;
@@ -262,7 +268,6 @@ namespace ExcelMerge {
                 }
             }
             ExcelGrid.ItemsSource = datas;
-            //ExcelGrid.DataContext = datas;
 
             CtxMenu.Items.Clear();
             var item = new MenuItem();
@@ -314,6 +319,7 @@ namespace ExcelMerge {
 
             if (item != null) { 
                 row.Header = (item.rowId+1).ToString();
+                row.Height = item.maxLineCount * 17;
             }
             //row.Header = ite
         }

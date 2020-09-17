@@ -348,6 +348,7 @@ namespace ExcelMerge {
             status.rowID2DiffMap2 = new Dictionary<int, int>();
             status.Diff2RowID1 = new Dictionary<int, int>();
             status.Diff2RowID2 = new Dictionary<int, int>();
+            status.DiffMaxLineCount = new Dictionary<int, int>();
             status.RowEdited1 = status.RowEdited1?? new Dictionary<int, Dictionary<int, CellEditMode>>();
             status.RowEdited2 = status.RowEdited2?? new Dictionary<int, Dictionary<int, CellEditMode>>();
 
@@ -361,7 +362,8 @@ namespace ExcelMerge {
                 if (diffkv.Obj2.Key == null) {
                     rowid2 = -1;
                 }
-                var diffrow = DiffSheetRow(src, rowid1, dst, rowid2, status);
+                int maxLineCount = 0;
+                var diffrow = DiffSheetRow(src, rowid1, dst, rowid2, status, out maxLineCount);
 
                 if (diffkv.Obj1.Key == null) {
                     // 创建新行，方便比较,放在后面是为了保证diff的时候是new,delete的形式，而不是modify
@@ -376,6 +378,7 @@ namespace ExcelMerge {
                 status.column2diff2[rowid2] = getColumn2Diff(diffrow, false);
 
                 int diffIdx = status.diffSheet.Count;
+                status.DiffMaxLineCount[diffIdx] = maxLineCount;
 
                 status.rowID2DiffMap1[rowid1] = diffIdx;
                 status.rowID2DiffMap2[rowid2] = diffIdx;
@@ -777,15 +780,19 @@ namespace ExcelMerge {
             return result.ToList();
         }
 
-        List<DiffResult<string>> DiffSheetRow(ISheet sheet1, int row1, ISheet sheet2, int row2, SheetDiffStatus status) {
+        List<DiffResult<string>> DiffSheetRow(ISheet sheet1, int row1, ISheet sheet2, int row2, SheetDiffStatus status, out int maxLineCount) {
             var list1 = new List<string>();
             var list2 = new List<string>();
 
+            maxLineCount = 0;
             if (sheet1.GetRow(row1)!=null) {
                 var row = sheet1.GetRow(row1);
                 var columnCount = books["src"].SheetValideColumn[sheet1.SheetName];
-                for (int i =0; i < columnCount; ++i) { 
-                    list1.Add(Util.GetCellValue(row.GetCell(i)));
+                for (int i =0; i < columnCount; ++i) {
+                    var value = Util.GetCellValue(row.GetCell(i));
+                    maxLineCount = Math.Max(maxLineCount, value.Count((c) => { return c == '\n'; }) + 1);
+
+                    list1.Add(value);
                 }
             }
 
@@ -793,7 +800,9 @@ namespace ExcelMerge {
                 var row = sheet2.GetRow(row2);
                 var columnCount = books["dst"].SheetValideColumn[sheet2.SheetName];
                 for (int i = 0; i < columnCount; ++i) {
-                    list2.Add(Util.GetCellValue(row.GetCell(i)));
+                    var value = Util.GetCellValue(row.GetCell(i));
+                    maxLineCount = Math.Max(maxLineCount, value.Count((c) => { return c == '\n'; }) + 1);
+                    list2.Add(value);
                 }
             }
             var diff = DiffUtil.Diff(list1, list2);

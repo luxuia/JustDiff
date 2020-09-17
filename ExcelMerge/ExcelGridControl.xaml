@@ -22,6 +22,7 @@
                         BeginningEdit="ExcelGrid_BeginningEdit"
                         EnableColumnVirtualization="True" EnableRowVirtualization="True"
                         VirtualizingPanel.VirtualizationMode="Recycling"
+					  VirtualizingPanel.IsVirtualizing="True"
                         ScrollViewer.ScrollChanged ="ExcelGrid_ScrollChanged" SelectionChanged="ExcelGrid_SelectionChanged" SelectedCellsChanged="ExcelGrid_SelectedCellsChanged">
                 <DataGrid.ContextMenu>
                     <ContextMenu Name="CtxMenu">
