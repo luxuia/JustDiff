@@ -230,7 +230,10 @@ namespace ExcelMerge {
                             var value = Util.GetCellValue(cell);
                             data.data[headerStr[i]] = new CellData() { value = value,  cell = cell };
                         }
-                        data.maxLineCount = status.DiffMaxLineCount[j];
+                        if (!status.DiffMaxLineCount.TryGetValue(j, out data.maxLineCount)) {
+                            data.maxLineCount = 1;
+                        }
+   
                         datas.Add(data);
                         data_maps[data.rowId] = data;
                     }
@@ -260,7 +263,9 @@ namespace ExcelMerge {
                             var value = Util.GetCellValue(cell);
                             data.data[headerStr[i]] = new CellData() { value = value, cell = cell};
                         }
-                        data.maxLineCount = status.DiffMaxLineCount[j];
+                        if (!status.DiffMaxLineCount.TryGetValue(j, out data.maxLineCount)) {
+                            data.maxLineCount = 1;
+                        }
 
                         datas.Add(data);
                         data_maps[data.rowId] = data;
