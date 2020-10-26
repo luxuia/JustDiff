@@ -95,7 +95,7 @@ namespace ExcelMerge {
             }
             ret += "</TR></TABLE>";
 
-            Clipboard.SetText(ret);
+            Clipboard.SetDataObject(ret);
 
         }
 
