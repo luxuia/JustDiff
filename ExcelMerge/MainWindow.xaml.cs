@@ -112,6 +112,13 @@ namespace ExcelMerge {
                     Title = "ExcelMerge " + "[已绑定]";
                 }
             }
+
+            PreviewKeyDown += new KeyEventHandler(HandleEsc);
+        }
+
+        private void HandleEsc(object sender, KeyEventArgs e) {
+            if (e.Key == Key.Escape)
+                Close();
         }
 
         public void ShowDirectoryWindow(string[] dirs, string tag) {
