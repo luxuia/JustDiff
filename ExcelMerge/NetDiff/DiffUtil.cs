@@ -140,12 +140,7 @@ namespace NetDiff
                     }
                 }
                 
-                if (j + optCount >= list.Count || list[i].Status != currentStatus) {
-                    while (i < j) {
-                        ret_list.Add(list[i]);
-                        i++;
-                    }
-                } else {
+                if ( j+optCount < list.Count && list[i].Status == currentStatus) { 
                     // 只处理删1增1的情况
                     while (i < j-1) {
                         ret_list.Add(list[i]);
@@ -167,26 +162,27 @@ namespace NetDiff
                         var status = obj2.Equals(obj1) ? DiffStatus.Equal : DiffStatus.Modified;
                         if (status == DiffStatus.Modified) {
                             diffcount++;
+                            // 超过一个修改，认为不应该优化，回退修改
+                            if (diffcount > 1) {
+                                break;
+                            }
                         }
-                        if (diffcount > 1) {
-                            break;
-                        }
+                        
                         test_list.Add(new DiffResult<T>(obj1, obj2, status));
                         i++;
                     }
-                    if (diffcount > 1) {
-                        i = oldi;
-                        while (i < j) {
-                            ret_list.Add(list[i]);
-                            i++;
-                        }
-                    } else {
+                    if (diffcount <= 1) {
                         ret_list.AddRange(test_list);
                         //跳过最后一个优化掉的insert
                         i += 1;
+                    } else {
+                        i = oldi;
                     }
 
-
+                }
+                while (i < j) {
+                    ret_list.Add(list[i]);
+                    i++;
                 }
             }
             return ret_list;
