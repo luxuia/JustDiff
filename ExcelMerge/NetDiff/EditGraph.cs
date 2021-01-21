@@ -222,6 +222,18 @@ namespace NetDiff
 
             foreach (var head in heads)
             {
+
+                //if (true) {//option.Optimize) {
+                //    var diag = GetPoint(head.Point, Direction.Diagonal);
+                //    if (InRange(diag)) {
+                //        var newHead = new Node(diag);
+                //        newHead.Parent = head;
+                //
+                //        isEnd |= newHead.Point.Equals(endpoint);
+                //
+                //        updated.Add(newHead);
+                //    }
+                //}
                 Node rightHead;
                 if (TryCreateHead(head, Direction.Right, out rightHead))
                 {
@@ -234,17 +246,6 @@ namespace NetDiff
                     updated.Add(bottomHead);
                 }
 
-                //if (option.Optimize) {
-                //    var diag = GetPoint(head.Point, Direction.Diagonal);
-                //    if (InRange(diag)) {
-                //        var newHead = new Node(diag);
-                //        newHead.Parent = head;
-                //
-                //        isEnd |= newHead.Point.Equals(endpoint);
-                //
-                //        updated.Add(newHead);
-                //    }
-                //}
             }
 
             heads = updated;
