@@ -103,6 +103,20 @@ namespace NetDiff
             */
         }
 
+        /*  A    0   0   nil
+        *  nil  0   0   0 
+        *  del          ins
+        *  0   0   0 
+        *  modify        
+        *  
+        *  nil 0   0   0
+        *  A   0   0   nil
+        *  ins         del
+        *  
+        *  A   0   0
+        *  modify
+        *  
+        */
         public static IEnumerable<DiffResult<T>> OptimizeShift<T>(IEnumerable<DiffResult<T>> diffResults, bool deleteFirst = true) {
             var currentStatus = deleteFirst ? DiffStatus.Deleted : DiffStatus.Inserted;
             var nextStatus = deleteFirst ? DiffStatus.Inserted : DiffStatus.Deleted;
@@ -116,8 +130,7 @@ namespace NetDiff
             for (var i = 0; i < list.Count;) {
                 j = i + 1;
                 optCount = 0;
-
-
+  
                 if (list[i].Status == currentStatus) {
                     while (j < list.Count && list[j].Status == currentStatus) {
                         j++;
@@ -126,19 +139,22 @@ namespace NetDiff
                         optCount++;
                     }
                 }
-
+                
                 if (j + optCount >= list.Count || list[i].Status != currentStatus) {
                     while (i < j) {
                         ret_list.Add(list[i]);
                         i++;
                     }
                 } else {
+                    // 只处理删1增1的情况
                     while (i < j-1) {
                         ret_list.Add(list[i]);
                         i++;
                     }
 
-                    
+                    int oldi = i;
+                    int diffcount = 0;
+                    var test_list = new List<DiffResult<T>>();
                     while (i < j + optCount) {
                         var obj1 = deleteFirst ? list[i].Obj1 : list[i + 1].Obj1;
                         var obj2 = deleteFirst ? list[i + 1].Obj2 : list[i].Obj2;
@@ -149,10 +165,27 @@ namespace NetDiff
                             obj2 = (T)(object)string.Empty;
                         }
                         var status = obj2.Equals(obj1) ? DiffStatus.Equal : DiffStatus.Modified;
-                        ret_list.Add(new DiffResult<T>(obj1, obj2, status));
+                        if (status == DiffStatus.Modified) {
+                            diffcount++;
+                        }
+                        if (diffcount > 1) {
+                            break;
+                        }
+                        test_list.Add(new DiffResult<T>(obj1, obj2, status));
                         i++;
                     }
-                    i += 1;
+                    if (diffcount > 1) {
+                        i = oldi;
+                        while (i < j) {
+                            ret_list.Add(list[i]);
+                            i++;
+                        }
+                    } else {
+                        ret_list.AddRange(test_list);
+                        //跳过最后一个优化掉的insert
+                        i += 1;
+                    }
+
 
                 }
             }

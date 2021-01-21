@@ -816,23 +816,10 @@ namespace ExcelMerge {
             //var optimized = diff.ToList();// DiffUtil.OptimizeCaseDeletedFirst(diff);
             var optimized = DiffUtil.OptimizeCaseDeletedFirst(diff);
             optimized = DiffUtil.OptimizeCaseInsertedFirst(optimized);
-            //var tlist = optimized.ToList();
-            //optimized = DiffUtil.OptimizeShift(tlist, false);
-            //optimized = DiffUtil.OptimizeShift(optimized, true);
-            /*  A    0   0   nil
-             *  nil  0   0   0 
-             *  del          ins
-             *  0   0   0 
-             *  modify        
-             *  
-             *  nil 0   0   0
-             *  A   0   0   nil
-             *  ins         del
-             *  
-             *  A   0   0
-             *  modify
-             *  
-             */
+            var tlist = optimized.ToList();
+            optimized = DiffUtil.OptimizeShift(tlist, false);
+            optimized = DiffUtil.OptimizeShift(optimized, true);
+
             return optimized.ToList();
         }
 
