@@ -586,6 +586,32 @@ namespace ExcelMerge {
             }
         }
 
+        public void DiffUri(long revision, Uri uri, long cmprevision, Uri cmpuri)
+        {
+            using (SvnClient client = new SvnClient())
+            {
+                var tempDir = System.IO.Path.GetTempPath();
+                var filename = System.IO.Path.GetFileName(uri.LocalPath);
+
+                var file1 = tempDir + revision + "_" + filename;
+                var checkoutArgs = new SvnWriteArgs() { Revision = revision };
+                using (var fs = System.IO.File.Create(file1))
+                {
+                    client.Write(uri, fs, checkoutArgs);
+                }
+                var file2 = tempDir + cmprevision + "_" + filename;
+                var checkoutArgs2 = new SvnWriteArgs() { Revision = cmprevision };
+                using (var fs = System.IO.File.Create(file2))
+                {
+                    client.Write(cmpuri, fs, checkoutArgs2);
+                }
+
+                _tempFiles.Add(file1);
+                _tempFiles.Add(file2);
+                Diff(file1, file2, false);
+            }
+        }
+
         public void Diff(long revision, long revisionto) {
             Uri uri;
             using (SvnClient client = new SvnClient()) {

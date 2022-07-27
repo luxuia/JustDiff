@@ -11,6 +11,8 @@ Features:
     背景色表示差异类型，黄色[修改]，灰色[删除]，绿色[新增]
     单格内红色文本表示差异，删除线删除，下划线新增
 	支持浏览器直接打开，管理员权限打开后会自动注册xlsmerge://协议，通过浏览器访问地址xlsmerge://svn-file-url?revision=100打开对比工具
+        对比两个地址上的版本: xlsmerge://[path1]?r=[version1]&cmp=[path2]?r=[version2]
+        对比同地址的前后版本: xlsmerge://[path1]?r=[version1]
 
 ![demo](demo.jpg)
 
