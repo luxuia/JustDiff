@@ -258,10 +258,10 @@ namespace ExcelMerge {
                             var message = logentry.LogMessage;
                             var date = logentry.Time;
 
-                            revisions.Add(new SvnRevisionCombo() { Revision = string.Format("{0}[{1}]", author, message), ID = (int)logentry.Revision });
+                            revisions.Add(new SvnRevisionCombo() { Revision = string.Format("{0}[{1}]", author, message), ID = logentry.Revision });
                         }
                         revisions.Sort((a, b) => {
-                            return b.ID - a.ID;
+                            return (int)(b.ID - a.ID);
                         });
                     }
                 }
@@ -531,6 +531,41 @@ namespace ExcelMerge {
         public int DiffStartIdx(int emptyline) {
             // 首三行一起作为key
             return ProcessHeader.IsChecked == true ? config.HeadCount+ emptyline : emptyline;
+        }
+
+
+        public void FindCellEdit(Uri uri, string key, string head)
+        {
+            using (SvnClient client = new SvnClient())
+            {
+                var fileversion = new Collection<SvnFileVersionEventArgs>();
+                client.GetFileVersions(uri, new SvnFileVersionsArgs() { Start = 0L }, out fileversion);
+
+                var left = 0;
+                var right = fileversion.Count()-1;
+
+                var find = -1;
+                while (find < 0)
+                {
+                    var mid = (left+right) /2;
+                    if (mid != left && mid != right)
+                    {
+                        var exist = checkIfVersionExists(mid, key, head);
+                        if (exist)
+                        {
+                            right = mid;
+                        } else
+                        {
+                            left = mid;
+                        }
+                    } else
+                    {
+                        find = mid;
+                    }
+                }
+                
+
+            }
         }
 
         public void DiffUri(long revision, long revisionto, Uri uri) {

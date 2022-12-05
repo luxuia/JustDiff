@@ -348,7 +348,7 @@ namespace ExcelMerge {
 
     public class SvnRevisionCombo {
         public string Revision { get; set; }
-        public int ID { get; set; }
+        public long ID { get; set; }
     }
 
     public class SheetSortKeyCombo {
