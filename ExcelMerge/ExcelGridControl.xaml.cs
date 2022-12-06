@@ -105,6 +105,37 @@ namespace ExcelMerge {
             MainWindow.instance.CopyCellsValue(Tag as string, otherTag, selectCells);
         }
 
+        private void Menu_BlameLine(object sender, RoutedEventArgs e)
+        {
+            var selectCells = ExcelGrid.SelectedCells;
+            //var text = Clipboard.GetText(TextDataFormat.Html);
+            MainWindow.instance.CopyCellsValue(Tag as string, otherTag, selectCells);
+
+            var tag = Tag as string;
+            var wrap = MainWindow.instance.books[tag];
+
+            var lines = new List<int>();
+            foreach (var cell in selectCells)
+            {
+                var rowdata = cell.Item as ExcelData;
+                MainWindow.instance.FindCellEdit(rowdata.rowId, -1);
+                break;
+            }
+
+           
+        }
+
+        private void Menu_BlameCell(object sender, RoutedEventArgs e)
+        {
+            var selectCells = ExcelGrid.SelectedCells;
+            foreach (var cell in selectCells)
+            {
+                var rowdata = cell.Item as ExcelData;
+                MainWindow.instance.FindCellEdit(rowdata.rowId, rowdata.diffIdx);
+                break;
+            }
+        }
+
         DependencyProperty GetDependencyPropertyByName(Type dependencyObjectType, string dpName) {
             DependencyProperty dp = null;
 
@@ -282,6 +313,16 @@ namespace ExcelMerge {
             var item = new MenuItem();
             item.Header = "行复制到" + (issrc ? "右侧" : "左侧");
             item.Click += Menu_CopyToSide;
+            CtxMenu.Items.Add(item);
+
+            item = new MenuItem();
+            item.Header = "blame 行";
+            item.Click += Menu_BlameLine;
+            CtxMenu.Items.Add(item);
+
+            item = new MenuItem();
+            item.Header = "blame 格子";
+            item.Click += Menu_BlameCell;
             CtxMenu.Items.Add(item);
         }
 

@@ -165,7 +165,22 @@ namespace ExcelMerge {
             return true;
         }
     }
+    public class Config
+    {
+        public List<string> NoHeadPaths = new List<string>();
 
+        public int HeadCount = 3;
+
+        public int ShowLineID = 3;
+
+        public int KeyLineID = 2;
+
+        public bool NoHead = false;
+
+        public int DefaultKeyID = 0;
+
+        public int EmptyLine = 0;
+    }
 
     public class WorkBookWrap {
         public IWorkbook book;
@@ -185,46 +200,48 @@ namespace ExcelMerge {
 
         public int reversion;
 
-        public List<ComboBoxItem> sheetCombo;
-        public List<SheetNameCombo> sheetNameCombos;
+        public List<ComboBoxItem> sheetCombo = new List<ComboBoxItem>();
+        public List<SheetNameCombo> sheetNameCombos = new List<SheetNameCombo>();
 
-        public Dictionary<int, int> ItemID2ComboIdx;
+        public Dictionary<int, int> ItemID2ComboIdx = new Dictionary<int, int>();
 
-        public Dictionary<string, int> SheetValideRow;
-        public Dictionary<string, int> SheetValideColumn;
+        public Dictionary<string, int> SheetValideRow = new Dictionary<string, int>();
+        public Dictionary<string, int> SheetValideColumn = new Dictionary<string, int>();
 
-        public Dictionary<string, Tuple<int, int>> SheetStartPoint;
+        public Dictionary<string, Tuple<int, int>> SheetStartPoint = new Dictionary<string, Tuple<int, int>>();
 
-        public WorkBookWrap(string file, int ignoreEmptyLine)
+        public Dictionary<string, List<string>> SheetHeaders = new Dictionary<string, List<string>>();
+
+        public Dictionary<string, List<string>> SheetIDs = new Dictionary<string, List<string>>();
+
+        public WorkBookWrap(string file, Config cfg)
         {
             book = Util.GetWorkBook(file);
             this.file = file;
             filename = System.IO.Path.GetFileName(file);
 
-            sheetCombo = new List<ComboBoxItem>();
-            var list = new List<SheetNameCombo>();
             for (int i = 0; i < book.NumberOfSheets; ++i)
             {
-                list.Add(new SheetNameCombo() { Name = book.GetSheetName(i), ID = i });
+                sheetNameCombos.Add(new SheetNameCombo() { Name = book.GetSheetName(i), ID = i });
             }
-            list.Sort((a, b) => { return a.Name.CompareTo(b.Name); });
+            sheetNameCombos.Sort((a, b) => { return a.Name.CompareTo(b.Name); });
 
-            sheetNameCombos = list;
+            sheetNameCombos.ForEach((a) => { var item = new ComboBoxItem(); item.Content = a; sheetCombo.Add(item); });
 
-            ItemID2ComboIdx = new Dictionary<int, int>();
-
-            list.ForEach((a) => { var item = new ComboBoxItem(); item.Content = a; sheetCombo.Add(item); });
-
-            for (int i = 0; i < list.Count; ++i)
+            for (int i = 0; i < sheetNameCombos.Count; ++i)
             {
-                ItemID2ComboIdx[list[i].ID] = i;
+                ItemID2ComboIdx[sheetNameCombos[i].ID] = i;
             }
 
-            SheetValideRow = new Dictionary<string, int>();
+            CalValideRow(cfg);
 
-            SheetValideColumn = new Dictionary<string, int>();
+            CalValideHeader(cfg);
 
-            SheetStartPoint = new Dictionary<string, Tuple<int, int>>();
+            CalValideIds(cfg);
+        }
+
+        void CalValideRow(Config cfg)
+        {
 
             for (int sheeti = 0; sheeti < book.NumberOfSheets; ++sheeti)
             {
@@ -256,7 +273,7 @@ namespace ExcelMerge {
                     var row = sheet.GetRow(i);
                     if (row == null || !Util.CheckValideRow(row))
                     {
-                        if (ignoreEmptyLine-- > 0)
+                        if (cfg.EmptyLine-- > 0)
                         {
                             continue;
                         }
@@ -267,6 +284,71 @@ namespace ExcelMerge {
                         }
                     };
                 }
+            }
+        }
+
+        void CalValideHeader(Config cfg)
+        {
+            for (int sheeti = 0; sheeti < book.NumberOfSheets; ++sheeti)
+            {
+                var sheet = book.GetSheetAt(sheeti);
+                List<string> header = new List<string>();
+
+                var startpoint = SheetStartPoint[sheet.SheetName];
+                var startrow = startpoint.Item1;
+                var startcol = startpoint.Item2;
+                var headrow = startrow + cfg.KeyLineID;
+
+                var row = sheet.GetRow(headrow);
+                if (row != null)
+                {
+                    for (int i = startcol; i < row.Cells.Count; ++i)
+                    {
+                        var val = Util.GetCellValue(row.GetCell(i));
+                        if (!string.IsNullOrWhiteSpace(val))
+                        {
+                            header.Add(val);
+                        } else
+                        {
+                            break;
+                        }
+                    }
+
+                    SheetHeaders[sheet.SheetName] = header;
+                }
+            }
+        }
+
+        void CalValideIds(Config cfg)
+        {
+            for (int sheeti = 0; sheeti < book.NumberOfSheets; ++sheeti)
+            {
+                var sheet = book.GetSheetAt(sheeti);
+                List<string> header = new List<string>();
+
+                var startpoint = SheetStartPoint[sheet.SheetName];
+                var startrow = startpoint.Item1;
+                var startcol = startpoint.Item2;
+                var totalrow = SheetValideRow[sheet.SheetName];
+                var idcol = startcol + cfg.DefaultKeyID;
+
+                for (int i = startcol; i < totalrow; i++)
+                {
+                    var row = sheet.GetRow(i);
+                    if (row != null)
+                    {
+                        var val = Util.GetCellValue(row.GetCell(idcol));
+                        if (!string.IsNullOrWhiteSpace(val))
+                        {
+                            header.Add(val);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+                SheetIDs[sheet.SheetName] = header;
             }
         }
 

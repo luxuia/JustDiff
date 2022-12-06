@@ -21,9 +21,8 @@ using string2int = System.Collections.Generic.KeyValuePair<string, int>;
 using System.IO;
 using Newtonsoft.Json;
 using Microsoft.Win32;
-
 namespace ExcelMerge {
- 
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -49,21 +48,7 @@ namespace ExcelMerge {
 
         public DirectoryDifferWindow dirWindow;
 
-        public class Config {
-            public List<string> NoHeadPaths = new List<string>();
-
-            public int HeadCount = 3;
-
-            public int ShowLineID = 3;
-
-            public int KeyLineID = 2;
-
-            public bool NoHead = false;
-
-            public int DefaultKeyID = 0;
-
-            public int EmptyLine = 0;
-        }
+ 
 
         static string ConfigPath = "config.json";
 
@@ -142,7 +127,7 @@ namespace ExcelMerge {
                 }
             }
 
-            var wb = new WorkBookWrap(file, config.EmptyLine);
+            var wb = new WorkBookWrap(file, config);
 
             books[tag] = wb;
 
@@ -426,8 +411,8 @@ namespace ExcelMerge {
                 oldsheetName = books["src"].sheetname;
             }
 
-            var src = new WorkBookWrap(file1, config.EmptyLine);
-            var dst = new WorkBookWrap(file2, config.EmptyLine);
+            var src = new WorkBookWrap(file1, config);
+            var dst = new WorkBookWrap(file2, config);
 
             var option = new DiffOption<SheetNameCombo>();
             option.EqualityComparer = new SheetNameComboComparer();
@@ -533,59 +518,106 @@ namespace ExcelMerge {
             return ProcessHeader.IsChecked == true ? config.HeadCount+ emptyline : emptyline;
         }
 
-
-        public void FindCellEdit(Uri uri, string key, string head)
+        string GetVersionFile(SvnClient client, Uri uri, long revision)
         {
+            var tempDir = System.IO.Path.GetTempPath();
+            var filename = System.IO.Path.GetFileName(uri.LocalPath);
+
+            var file = tempDir + revision + "_" + filename;
+            var checkoutArgs = new SvnWriteArgs() { Revision = revision };
+            using (var fs = System.IO.File.Create(file))
+            {
+                client.Write(uri, fs, checkoutArgs);
+            }
+
+            _tempFiles.Add(file);
+
+            return file;
+        }
+
+        bool CheckIfVersionExists(SvnClient client, Uri uri, long revision, string sheet_name, string id, string header, string value)
+        {
+            var file = GetVersionFile(client, uri, revision);
+
+            var wrap = new WorkBookWrap(file, config);
+
+            var startpoint = wrap.SheetStartPoint[sheet_name];
+            var rowStart = startpoint.Item1;
+            var columnStart = startpoint.Item2;
+
+            var headers = wrap.SheetHeaders[sheet_name];
+            var header_idx = headers.IndexOf(header);
+
+            var ids = wrap.SheetIDs[sheet_name];
+            var id_idx = ids.IndexOf(id);
+
+            if (header_idx >= 0 && id_idx >= 0)
+            {
+                var sheet = wrap.book.GetSheet(sheet_name);
+                var row = sheet.GetRow(id_idx + rowStart);
+                var val = Util.GetCellValue( row.GetCell(header_idx + columnStart));
+                if (val == value)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
+
+        public void FindCellEdit(int rowid, int colid)
+        {
+  
             using (SvnClient client = new SvnClient())
             {
+                SvnInfoEventArgs info;
+                client.GetInfo(SrcFile, out info);
+                var uri = info.Uri;
+                var sheetname = books["src"].sheetname;
+
+                string id = "", col_name = "", value = "" ;
+
                 var fileversion = new Collection<SvnFileVersionEventArgs>();
                 client.GetFileVersions(uri, new SvnFileVersionsArgs() { Start = 0L }, out fileversion);
 
                 var left = 0;
                 var right = fileversion.Count()-1;
 
-                var find = -1;
-                while (find < 0)
+                long  revision = 0;
+                while (left < right)
                 {
                     var mid = (left+right) /2;
-                    if (mid != left && mid != right)
+ 
+                    var exist = CheckIfVersionExists(client, uri, fileversion[mid].Revision, sheetname, id, col_name, value);
+                    if (!exist)
                     {
-                        var exist = checkIfVersionExists(mid, key, head);
-                        if (exist)
+                        if (mid == right-1)
                         {
-                            right = mid;
-                        } else
-                        {
-                            left = mid;
+                            revision = right;
+                            break;
                         }
+                        right = mid;
                     } else
                     {
-                        find = mid;
+                        left = mid;
                     }
                 }
-                
-
+                if (revision > 0)
+                {
+                    DiffUri(revision - 1, revision, uri);
+                }
             }
         }
 
         public void DiffUri(long revision, long revisionto, Uri uri) {
             using (SvnClient client = new SvnClient()) {
-                var tempDir = System.IO.Path.GetTempPath();
-                var filename = System.IO.Path.GetFileName(uri.LocalPath);
 
-                var file1 = tempDir + revision + "_" + filename;
-                var checkoutArgs = new SvnWriteArgs() { Revision = revision };
-                using (var fs = System.IO.File.Create(file1)) {
-                    client.Write(uri, fs, checkoutArgs);
-                }
-                var file2 = tempDir + revisionto + "_" + filename;
-                var checkoutArgs2 = new SvnWriteArgs() { Revision = revisionto };
-                using (var fs = System.IO.File.Create(file2)) {
-                    client.Write(uri, fs, checkoutArgs2);
-                }
+                var file1 = GetVersionFile(client, uri, revision);
 
-                _tempFiles.Add(file1);
-                _tempFiles.Add(file2);
+                var file2 = GetVersionFile(client, uri, revisionto);
+
                 Diff(file1, file2, false);
             }
         }
@@ -594,24 +626,10 @@ namespace ExcelMerge {
         {
             using (SvnClient client = new SvnClient())
             {
-                var tempDir = System.IO.Path.GetTempPath();
-                var filename = System.IO.Path.GetFileName(uri.LocalPath);
+                var file1 = GetVersionFile(client, uri, revision);
 
-                var file1 = tempDir + revision + "_" + filename;
-                var checkoutArgs = new SvnWriteArgs() { Revision = revision };
-                using (var fs = System.IO.File.Create(file1))
-                {
-                    client.Write(uri, fs, checkoutArgs);
-                }
-                var file2 = tempDir + cmprevision + "_" + filename;
-                var checkoutArgs2 = new SvnWriteArgs() { Revision = cmprevision };
-                using (var fs = System.IO.File.Create(file2))
-                {
-                    client.Write(cmpuri, fs, checkoutArgs2);
-                }
+                var file2 = GetVersionFile(client, cmpuri, cmprevision);
 
-                _tempFiles.Add(file1);
-                _tempFiles.Add(file2);
                 Diff(file1, file2, false);
             }
         }
