@@ -142,9 +142,9 @@ namespace ExcelMerge {
                 }
             }
 
-            var wb = Util.GetWorkBook(file);
+            var wb = new WorkBookWrap(file, config.EmptyLine);
 
-            books[tag] = new WorkBookWrap() { book = wb, sheet = sheet, file = file, filename = System.IO.Path.GetFileName(file) };
+            books[tag] = wb;
 
             if (type == FileOpenType.Drag) {
                 if (tag == "src")
@@ -158,9 +158,9 @@ namespace ExcelMerge {
                 SrcFilePath.Content = file;
                 List<ComboBoxItem> list = new List<ComboBoxItem>();
                 SrcFileSheetsCombo.Items.Clear();
-                for (int i = 0; i < wb.NumberOfSheets; ++i) {
+                for (int i = 0; i < wb.book.NumberOfSheets; ++i) {
                     var item = new ComboBoxItem();
-                    item.Content = new SheetNameCombo() { Name = wb.GetSheetName(i), ID = i };
+                    item.Content = new SheetNameCombo() { Name = wb.book.GetSheetName(i), ID = i };
                     SrcFileSheetsCombo.Items.Add(item);
                     list.Add(item);
                 }
@@ -170,9 +170,9 @@ namespace ExcelMerge {
                 DstFilePath.Content = file;
                 List<ComboBoxItem> list = new List<ComboBoxItem>();
                 DstFileSheetsCombo.Items.Clear();
-                for (int i = 0; i < wb.NumberOfSheets; ++i) {
+                for (int i = 0; i < wb.book.NumberOfSheets; ++i) {
                     var item = new ComboBoxItem();
-                    item.Content = new SheetNameCombo() { Name = wb.GetSheetName(i), ID = i };
+                    item.Content = new SheetNameCombo() { Name = wb.book.GetSheetName(i), ID = i };
                     DstFileSheetsCombo.Items.Add(item);
                     list.Add(item);
                 }
@@ -269,39 +269,6 @@ namespace ExcelMerge {
             }
         }
 
-        void SyncUpdateSVNRevision() {
-
-        }
-
-        WorkBookWrap InitWorkWrap(string file) {
-            var wb = new WorkBookWrap() {
-                book = Util.GetWorkBook(file),
-                file = file,
-                filename = System.IO.Path.GetFileName(file)
-            };
-
-            wb.sheetCombo = new List<ComboBoxItem>();
-            var list = new List<SheetNameCombo>();
-            for (int i = 0; i < wb.book.NumberOfSheets; ++i) {
-                list.Add(new SheetNameCombo() { Name = wb.book.GetSheetName(i), ID = i });
-            }
-            list.Sort((a, b) => { return a.Name.CompareTo(b.Name); });
-
-            wb.sheetNameCombos = list;
-
-            wb.ItemID2ComboIdx = new Dictionary<int, int>();
-
-            list.ForEach((a) => { var item = new ComboBoxItem(); item.Content = a; wb.sheetCombo.Add(item); });
-
-            for (int i = 0; i < list.Count;++i) {
-                wb.ItemID2ComboIdx[list[i].ID] = i;
-            }
-
-            wb.SheetValideRow = new Dictionary<string, int>();
-            wb.SheetValideColumn = new Dictionary<string, int>();
-
-            return wb;
-        }
 
         int[] getColumn2Diff(List<DiffResult<string>> diff, bool from) {
             int idx = 0;
@@ -326,8 +293,11 @@ namespace ExcelMerge {
 
             bool changed = false;
 
-            var head1 = GetHeaderStrList(src);
-            var head2 = GetHeaderStrList(dst);
+            var srcwrap = books["src"];
+            var dstwrap = books["dst"];
+
+            var head1 = GetHeaderStrList(srcwrap, src);
+            var head2 = GetHeaderStrList(dstwrap, dst);
             if (head1 == null || head2 == null) return null;
 
             var diff = NetDiff.DiffUtil.Diff(head1, head2);
@@ -343,8 +313,8 @@ namespace ExcelMerge {
             status.column2diff1[0] = getColumn2Diff(diffhead, true);
             status.column2diff2[0] = getColumn2Diff(diffhead, false);
 
-            books["src"].SheetValideColumn[src.SheetName] = head1.Count;
-            books["dst"].SheetValideColumn[dst.SheetName] = head2.Count;
+            srcwrap.SheetValideColumn[src.SheetName] = head1.Count;
+            dstwrap.SheetValideColumn[dst.SheetName] = head2.Count;
             
             status.diffFistColumn = GetIDDiffList(src, dst, 1, false, status.sortKey);
 
@@ -456,9 +426,8 @@ namespace ExcelMerge {
                 oldsheetName = books["src"].sheetname;
             }
 
-            var src = InitWorkWrap(file1);
-            var dst = InitWorkWrap(file2);
-
+            var src = new WorkBookWrap(file1, config.EmptyLine);
+            var dst = new WorkBookWrap(file2, config.EmptyLine);
 
             var option = new DiffOption<SheetNameCombo>();
             option.EqualityComparer = new SheetNameComboComparer();
@@ -559,9 +528,9 @@ namespace ExcelMerge {
             //OnSheetChanged();
         }
 
-        public int DiffStartIdx() {
+        public int DiffStartIdx(int emptyline) {
             // 首三行一起作为key
-            return ProcessHeader.IsChecked == true ? config.HeadCount : 0;
+            return ProcessHeader.IsChecked == true ? config.HeadCount+ emptyline : emptyline;
         }
 
         public void DiffUri(long revision, long revisionto, Uri uri) {
@@ -654,20 +623,23 @@ namespace ExcelMerge {
             edited[rowid][columnid] = mode;
         }
   
-        List<string> GetHeaderStrList(ISheet sheet) {
+        List<string> GetHeaderStrList(WorkBookWrap wrap, ISheet sheet) {
             List<string> header = new List<string>();
 
+            var startpoint = wrap.SheetStartPoint[sheet.SheetName];
+            var startrow = startpoint.Item1;
+            var startcol = startpoint.Item2;
             if (ProcessHeader.IsChecked == true) {
                 var list = new List<IRow>();
-                for (int i = 0; i < DiffStartIdx(); ++i) {
+                for (int i = startrow; i < DiffStartIdx(startrow); ++i) {
                     var row = sheet.GetRow(i);
                     if (row == null) return null;
                     list.Add(row);
                 }
                 
-                for (int i = 0; i < list[0].Cells.Count; ++i) {
+                for (int i = startcol; i < list[0].Cells.Count; ++i) {
                     var str = "";
-                    for (int j = 0; j < DiffStartIdx(); ++j) {
+                    for (int j = 0; j < DiffStartIdx(0); ++j) {
                         var cell_s = Util.GetCellValue(list[j].GetCell(i));
                         if (j == 0 && string.IsNullOrWhiteSpace(cell_s)) {
                             return header;
@@ -678,10 +650,10 @@ namespace ExcelMerge {
                     header.Add(str);
                 }
             } else {
-                var row0 = sheet.GetRow(0);
+                var row0 = sheet.GetRow(startrow);
                 if (row0 == null ) return null;
 
-                for (int i = 0; i < row0.Cells.Count; ++i) {
+                for (int i = startcol; i < row0.Cells.Count; ++i) {
                     var s1 = Util.GetCellValue(row0.GetCell(i));
                     // 起码有两列
                     if (string.IsNullOrWhiteSpace(s1) && i > 1) {
@@ -692,117 +664,105 @@ namespace ExcelMerge {
             }
             return header;
         }
-
+        enum SearchStatus { Succ, NextCol, Fail };
         // 把第一列认为是id列，检查增删, <value, 行id>
         List<DiffResult<string2int>> GetIDDiffList(ISheet sheet1, ISheet sheet2, int checkCellCount, bool addRowID = false, int startCheckCell=0) {
+ 
+     
+            bool allNum = checkCellCount==1;
+
+            Func<WorkBookWrap, ISheet, List<string2int>, SearchStatus> search = (WorkBookWrap wrap, ISheet sheet, List<string2int> list) => {
+                var nameHash = new HashSet<string>();
+                var startrow = wrap.SheetStartPoint[sheet.SheetName].Item1;
+                var startIdx = DiffStartIdx(startrow);
+                int ignoreEmptyLine = config.EmptyLine;
+                // 尝试找一个id不会重复的前几列的值作为key
+                for (int i = startIdx; ; i++)
+                {
+                    var row = sheet.GetRow(i);
+                    if (row == null || !Util.CheckValideRow(row))
+                    {
+                        break;
+                    };
+
+                    var val = "";
+                    for (var j = startCheckCell; j < startCheckCell + checkCellCount; ++j)
+                    {
+                        if (row.GetCell(j) == null || row.GetCell(j).CellType != CellType.Numeric)
+                        {
+                            allNum = false;
+                        }
+                        val += Util.GetCellValue(row.GetCell(j));
+                    }
+                    var hash_val = val;
+                    if (addRowID)
+                    {
+                        hash_val = hash_val + "." + i;
+                    }
+                    if (nameHash.Contains(hash_val))
+                    {
+                        if (checkCellCount < 6)
+                        {
+                            return SearchStatus.NextCol;
+                        }
+                        else
+                        {
+                            // 已经找不到能作为key的了。把id和行号连一块
+                            return SearchStatus.Fail;
+                        }
+                    }
+
+                    nameHash.Add(hash_val);
+
+                    list.Add(new string2int(val, i));
+                }
+
+                return SearchStatus.Succ;
+            };
             var list1 = new List<string2int>();
             var list2 = new List<string2int>();
 
-            var nameHash = new HashSet<string>();
-
-            var startIdx = DiffStartIdx();
-            bool allNum = checkCellCount==1;
-            int ignoreEmptyLine = config.EmptyLine;
-            // 尝试找一个id不会重复的前几列的值作为key
-            for (int i = startIdx; ; i++) {
-                var row = sheet1.GetRow(i);
-                if (row == null || !Util.CheckValideRow(row)) {
-                    if (ignoreEmptyLine-- > 0) {
-                        continue;
-                    } else {
-                        books["src"].SheetValideRow[sheet1.SheetName] = i;
-                        break;
-                    }
-                };
- 
-                var val = "";
-                for (var j = startCheckCell; j < startCheckCell+checkCellCount; ++j) {
-                    if (row.GetCell(j) == null || row.GetCell(j).CellType != CellType.Numeric) {
-                        allNum = false;
-                    }
-                    val += Util.GetCellValue(row.GetCell(j));
-                }
-                var hash_val = val;
-                if (addRowID) {
-                    hash_val = hash_val + "." + i;
-                }
-                if (nameHash.Contains(hash_val)) {
-                    if (checkCellCount < 6) {
-                        return GetIDDiffList(sheet1, sheet2, checkCellCount + 1, addRowID, startCheckCell);
-                    } else {
-                        // 已经找不到能作为key的了。把id和行号连一块
-                        return GetIDDiffList(sheet1, sheet2, 1, true, startCheckCell);
-                    }
-                } 
-
-                nameHash.Add(hash_val);
-
-                list1.Add(new string2int(val, i));
+            var searchstatus1 = search(books["src"], sheet1, list1);
+            switch (searchstatus1)
+            {
+                case SearchStatus.Fail:
+                    return GetIDDiffList(sheet1, sheet2, 1, true, startCheckCell);
+                case SearchStatus.NextCol:
+                    return GetIDDiffList(sheet1, sheet2, checkCellCount + 1, addRowID, startCheckCell);
+                default:
+                    break;
             }
-
-            nameHash.Clear();
-            ignoreEmptyLine = config.EmptyLine;
-            for (int i = startIdx; ; i++) {
-                var row = sheet2.GetRow(i);
-                if (row == null || !Util.CheckValideRow(row)) {
-                    if (ignoreEmptyLine-- > 0) {
-                        continue;
-                    }
-                    else {
-                        books["dst"].SheetValideRow[sheet2.SheetName] = i;
-                        break;
-                    }
-                }
-                var val = "";
-                for (var j = startCheckCell; j < startCheckCell+ checkCellCount; ++j) {
-                    if (row.GetCell(j) == null || row.GetCell(j).CellType != CellType.Numeric) {
-                        allNum = false;
-                    }
-                    val += Util.GetCellValue(row.GetCell(j));
-                }
-                var hash_val = val;
-                if (addRowID) {
-                    hash_val = hash_val + "." + i;
-                }
-                if (nameHash.Contains(hash_val)) {
-                    if (checkCellCount < 6) {
-                        return GetIDDiffList(sheet1, sheet2, checkCellCount + 1, addRowID, startCheckCell);
-                    }
-                    else {
-                        // 已经找不到能作为key的了。把id和行号连一块
-                        return GetIDDiffList(sheet1, sheet2, 1, true, startCheckCell);
-                    }
-                }
-                nameHash.Add(hash_val);
-
-                list2.Add(new string2int(val, i));
+            var searchstatus2 = search(books["dst"], sheet2, list2);
+            switch (searchstatus2)
+            {
+                case SearchStatus.Fail:
+                    return GetIDDiffList(sheet1, sheet2, 1, true, startCheckCell);
+                case SearchStatus.NextCol:
+                    return GetIDDiffList(sheet1, sheet2, checkCellCount + 1, addRowID, startCheckCell);
+                default:
+                    break;
             }
-            list1.Sort(delegate (string2int a, string2int b) {
+            Comparison<string2int> sortfunc = (string2int a, string2int b) =>
+            {
                 int cmp = 0;
-                if (allNum) {
-                    cmp = Double.Parse( a.Key) .CompareTo(Double.Parse(b.Key));
-                } else {
-                    cmp = a.Key.CompareTo(b.Key);
-                }
-                
-                if (cmp == 0) {
-                    return a.Value.CompareTo(b.Value);
-                }
-                return cmp;
-            });
-            list2.Sort(delegate (string2int a, string2int b) {
-                int cmp = 0;
-                if (allNum) {
+                if (allNum)
+                {
                     cmp = Double.Parse(a.Key).CompareTo(Double.Parse(b.Key));
                 }
-                else {
+                else
+                {
                     cmp = a.Key.CompareTo(b.Key);
                 }
-                if (cmp == 0) {
+
+                if (cmp == 0)
+                {
                     return a.Value.CompareTo(b.Value);
                 }
                 return cmp;
-            });
+            };
+
+            list1.Sort(sortfunc);
+            list2.Sort(sortfunc);
 
             var option = new DiffOption<string2int>();
             option.EqualityComparer = new SheetIDComparer();
@@ -821,8 +781,9 @@ namespace ExcelMerge {
             if (sheet1.GetRow(row1)!=null) {
                 var row = sheet1.GetRow(row1);
                 var columnCount = books["src"].SheetValideColumn[sheet1.SheetName];
-                for (int i =0; i < columnCount; ++i) {
-                    var value = Util.GetCellValue(row.GetCell(i));
+                var columnstart = books["src"].SheetStartPoint[sheet1.SheetName].Item2;
+                for (int i = 0; i < columnCount; ++i) {
+                    var value = Util.GetCellValue(row.GetCell(i+columnstart));
                     maxLineCount = Math.Max(maxLineCount, value.Count((c) => { return c == '\n'; }) + 1);
 
                     list1.Add(value);
@@ -832,8 +793,9 @@ namespace ExcelMerge {
             if (sheet2.GetRow(row2) != null) {
                 var row = sheet2.GetRow(row2);
                 var columnCount = books["dst"].SheetValideColumn[sheet2.SheetName];
+                var columnstart = books["dst"].SheetStartPoint[sheet2.SheetName].Item2;
                 for (int i = 0; i < columnCount; ++i) {
-                    var value = Util.GetCellValue(row.GetCell(i));
+                    var value = Util.GetCellValue(row.GetCell(i+columnstart));
                     maxLineCount = Math.Max(maxLineCount, value.Count((c) => { return c == '\n'; }) + 1);
                     list2.Add(value);
                 }
@@ -852,27 +814,30 @@ namespace ExcelMerge {
         void OnSheetChanged() {
             List<SheetSortKeyCombo> keys = new List<SheetSortKeyCombo>();
 
-            var sheet = books["src"].GetCurSheet();
-            var src_sheet = books["src"].sheetname;
+            var wrap = books["src"];
+            var sheet = wrap.GetCurSheet();
+            var src_sheet = wrap.sheetname;
             if (!sheetsDiff.ContainsKey(src_sheet)) return;
 
             var sheetdata = sheetsDiff[src_sheet];
 
-           
+            var startpoint = wrap.SheetStartPoint[sheet.SheetName];
+            var RowStart = startpoint.Item1;
+            var columnStart = startpoint.Item2;
+            var columnCount = wrap.SheetValideColumn[sheet.SheetName];
+
             var list = new List<string>();
             if (ProcessHeader.IsChecked == true) {
-                int namekey = config.KeyLineID - 1;
+                int namekey = config.KeyLineID - 1+ RowStart;
                 if (sheet.GetRow(namekey) != null) {
                     var row = sheet.GetRow(namekey);
-                    var columnCount = books["src"].SheetValideColumn[sheet.SheetName];
-                    for (int i = 0; i < columnCount; ++i) {
+                    for (int i = columnStart; i < columnCount; ++i) {
                         list.Add(Util.GetCellValue(row.GetCell(i)));
                     }
                 }
             }
             else {
-                var columnCount = books["src"].SheetValideColumn[sheet.SheetName];
-                for (int i = 0; i < columnCount; ++i) {
+                for (int i = columnStart; i < columnCount; ++i) {
                     list.Add((i+1).ToString());
                 }
             }

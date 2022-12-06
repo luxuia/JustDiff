@@ -154,19 +154,23 @@ namespace ExcelMerge {
 
                 // header不会空
                 var columnCount = wrap.SheetValideColumn[sheet.SheetName];
+                var startpoint = wrap.SheetStartPoint[sheet.SheetName];
+                var startrow = startpoint.Item1;
+                var startcol = startpoint.Item2;
+
                 var headerStr = new string[columnCount];
 
                 var needChangeHead = MainWindow.instance.ProcessHeader.IsChecked == true;
                 if (needChangeHead) {
-                    var headershow = sheet.GetRow(MainWindow.instance.config.ShowLineID-1);
-                    var headerkey = sheet.GetRow(MainWindow.instance.config.KeyLineID-1);
+                    var headershow = sheet.GetRow(MainWindow.instance.config.ShowLineID-1 + startrow);
+                    var headerkey = sheet.GetRow(MainWindow.instance.config.KeyLineID-1 +startrow);
 
                     if (headershow == null || headerkey == null) return;
 
                     int linecount = 0;
                     for (int i = 0; i < columnCount; ++i) {
-                        var cellshow = headershow.GetCell(i);
-                        var cellkey = headerkey.GetCell(i);
+                        var cellshow = headershow.GetCell(i + startcol);
+                        var cellkey = headerkey.GetCell(i + startcol);
 
                         var strshow = Util.GetCellValue(cellshow);
                         var strkey = Util.GetCellValue(cellkey);
@@ -213,7 +217,7 @@ namespace ExcelMerge {
 
                 if (needChangeHead) {
                     // 头
-                    for (int j = 0; j < MainWindow.instance.DiffStartIdx(); j++) {
+                    for (int j = startrow; j < MainWindow.instance.DiffStartIdx(startrow); j++) {
                         var row = sheet.GetRow(j);
                         if (row == null || !Util.CheckValideRow(row)) break;
 
@@ -226,7 +230,7 @@ namespace ExcelMerge {
                         data.diffstatus = status.diffHead;
 
                         for (int i = 0; i < columnCount; ++i) {
-                            var cell = row.GetCell(i);
+                            var cell = row.GetCell(i+startcol);
                             var value = Util.GetCellValue(cell);
                             data.data[headerStr[i]] = new CellData() { value = value,  cell = cell };
                         }
@@ -259,7 +263,7 @@ namespace ExcelMerge {
 
                         data.data["rowid"] = new CellData() { value = (rowid+1).ToString() };
                         for (int i = 0; i < columnCount; ++i) {
-                            var cell = row != null ? row.GetCell(i):null;
+                            var cell = row != null ? row.GetCell(i+startcol):null;
                             var value = Util.GetCellValue(cell);
                             data.data[headerStr[i]] = new CellData() { value = value, cell = cell};
                         }

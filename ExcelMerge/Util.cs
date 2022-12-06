@@ -90,9 +90,25 @@ namespace ExcelMerge {
         }
 
         public static IWorkbook GetWorkBook(string file) {
-            using (var s = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-                return WorkbookFactory.Create(s);
+            IWorkbook book = null;
+            try
+            {
+                using (var s = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    book = WorkbookFactory.Create(s);
+                }
             }
+            finally
+            {
+                if (book == null)
+                {
+                    using (var s = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        book = WorkbookFactory.Create(s);
+                    }
+                }
+            }
+            return book;
         }
 
         public static bool CheckValideRow(IRow row) {
@@ -176,6 +192,83 @@ namespace ExcelMerge {
 
         public Dictionary<string, int> SheetValideRow;
         public Dictionary<string, int> SheetValideColumn;
+
+        public Dictionary<string, Tuple<int, int>> SheetStartPoint;
+
+        public WorkBookWrap(string file, int ignoreEmptyLine)
+        {
+            book = Util.GetWorkBook(file);
+            this.file = file;
+            filename = System.IO.Path.GetFileName(file);
+
+            sheetCombo = new List<ComboBoxItem>();
+            var list = new List<SheetNameCombo>();
+            for (int i = 0; i < book.NumberOfSheets; ++i)
+            {
+                list.Add(new SheetNameCombo() { Name = book.GetSheetName(i), ID = i });
+            }
+            list.Sort((a, b) => { return a.Name.CompareTo(b.Name); });
+
+            sheetNameCombos = list;
+
+            ItemID2ComboIdx = new Dictionary<int, int>();
+
+            list.ForEach((a) => { var item = new ComboBoxItem(); item.Content = a; sheetCombo.Add(item); });
+
+            for (int i = 0; i < list.Count; ++i)
+            {
+                ItemID2ComboIdx[list[i].ID] = i;
+            }
+
+            SheetValideRow = new Dictionary<string, int>();
+
+            SheetValideColumn = new Dictionary<string, int>();
+
+            SheetStartPoint = new Dictionary<string, Tuple<int, int>>();
+
+            for (int sheeti = 0; sheeti < book.NumberOfSheets; ++sheeti)
+            {
+                var sheet = book.GetSheetAt(sheeti);
+                int startrow = 0, startcol = 0;
+                for (int i = 0; i < 20; i++)
+                {
+                    var row = sheet.GetRow(i);
+                    if (row != null && Util.CheckValideRow(row))
+                    {
+                        startrow = i;
+                        break;
+                    };
+                }
+                var firstrow = sheet.GetRow(startrow);
+                for (int i = 0; i < 5; i++)
+                {
+                    var cell = firstrow != null ? firstrow.GetCell(i) : null;
+                    if (cell != null && !string.IsNullOrEmpty(Util.GetCellValue(cell)))
+                    {
+                        startcol = i;
+                        break;
+                    };
+                }
+                SheetStartPoint[sheet.SheetName] = new Tuple<int, int>(startrow, startcol);
+
+                for (int i = startrow; ; i++)
+                {
+                    var row = sheet.GetRow(i);
+                    if (row == null || !Util.CheckValideRow(row))
+                    {
+                        if (ignoreEmptyLine-- > 0)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            SheetValideRow[sheet.SheetName] = i;
+                            break;
+                        }
+                    };
+                }
+            }
+        }
 
         public ISheet GetCurSheet() {
             return book.GetSheetAt(sheet);
