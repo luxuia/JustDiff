@@ -29,7 +29,6 @@ namespace ExcelMerge {
         public override System.Windows.DataTemplate SelectTemplate(object item, System.Windows.DependencyObject container) {
             ExcelData rowdata = item as ExcelData;
             if (rowdata != null) {
-                var rowid = rowdata.rowId;
 
                 Brush bg = Brushes.White;
                 if (!isEditing) {
@@ -38,15 +37,7 @@ namespace ExcelMerge {
                         var diffid = rowdata.column2diff[ColumnID];
                         var diffresult = rowdiff.diffcells[diffid];
                         DiffStatus status = rowdiff.diffcells[diffid].Status;
-                        //var src_rowdata = MainWindow.instance.excelGridData["src"];
-                        //if (rowdata.tag == "dst" && status == DiffStatus.Equal && src_rowdata != null && src_rowdata.ContainsKey(rowid)) {
-                        //    var cur_value = rowdata.data[Binder].value;
-                        //
-                        //    var src_value = src_rowdata[rowid].data[Binder].value;
-                        //    if (cur_value != src_value) {
-                        //        status = DiffStatus.Modified;
-                        //    }
-                        //}
+
                         var diff_detail = rowdiff.diffcell_details != null ? rowdiff.diffcell_details[diffid]:null;
 
                         switch (status) {

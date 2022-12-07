@@ -567,17 +567,26 @@ namespace ExcelMerge {
 
 
 
-        public void FindCellEdit(int rowid, int colid)
+        public void FindCellEdit(WorkBookWrap wrap, int rowid, int col_id)
         {
   
             using (SvnClient client = new SvnClient())
             {
                 SvnInfoEventArgs info;
-                client.GetInfo(SrcFile, out info);
+                client.GetInfo(wrap.file, out info);
                 var uri = info.Uri;
-                var sheetname = books["src"].sheetname;
+                var sheetname = wrap.sheetname;
 
-                string id = "", col_name = "", value = "" ;
+                var startpoint = wrap.SheetStartPoint[sheetname];
+                var startrow = startpoint.Item1;
+                var startcol = startpoint.Item2;
+
+                string col_name = "", value = "" ;
+                string id = wrap.SheetIDs[sheetname][rowid-startrow];
+                if (col_id >= 0)
+                {
+                    col_name = wrap.SheetHeaders[sheetname][col_id];
+                }
 
                 var fileversion = new Collection<SvnFileVersionEventArgs>();
                 client.GetFileVersions(uri, new SvnFileVersionsArgs() { Start = 0L }, out fileversion);

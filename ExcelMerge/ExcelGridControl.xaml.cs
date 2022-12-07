@@ -108,8 +108,6 @@ namespace ExcelMerge {
         private void Menu_BlameLine(object sender, RoutedEventArgs e)
         {
             var selectCells = ExcelGrid.SelectedCells;
-            //var text = Clipboard.GetText(TextDataFormat.Html);
-            MainWindow.instance.CopyCellsValue(Tag as string, otherTag, selectCells);
 
             var tag = Tag as string;
             var wrap = MainWindow.instance.books[tag];
@@ -118,7 +116,7 @@ namespace ExcelMerge {
             foreach (var cell in selectCells)
             {
                 var rowdata = cell.Item as ExcelData;
-                MainWindow.instance.FindCellEdit(rowdata.rowId, -1);
+                MainWindow.instance.FindCellEdit(wrap, rowdata.rowId, -1);
                 break;
             }
 
@@ -131,7 +129,10 @@ namespace ExcelMerge {
             foreach (var cell in selectCells)
             {
                 var rowdata = cell.Item as ExcelData;
-                MainWindow.instance.FindCellEdit(rowdata.rowId, rowdata.diffIdx);
+                var tag = Tag as string;
+                var wrap = MainWindow.instance.books[tag];
+
+                MainWindow.instance.FindCellEdit(wrap, rowdata.rowId, cell.Column.index);
                 break;
             }
         }
@@ -255,7 +256,6 @@ namespace ExcelMerge {
                         var data = new ExcelData();
                         data.rowId = row.RowNum;
                         data.tag = Tag as string;
-                        data.diffIdx = j;
 
                         data.column2diff = issrc ? status.column2diff1[0] : status.column2diff2[0];
                         data.diffstatus = status.diffHead;
@@ -288,7 +288,6 @@ namespace ExcelMerge {
                         data.rowId = rowid;
                         data.tag = Tag as string;
                         data.diffstatus = status.diffSheet[j];
-                        data.diffIdx = j;
                         data.CellEdited = edited[rowid];
                         data.column2diff = issrc ? status.column2diff1[rowid] : status.column2diff2[rowid];
 
@@ -313,7 +312,7 @@ namespace ExcelMerge {
             var item = new MenuItem();
             item.Header = "行复制到" + (issrc ? "右侧" : "左侧");
             item.Click += Menu_CopyToSide;
-            CtxMenu.Items.Add(item);
+            //CtxMenu.Items.Add(item);
 
             item = new MenuItem();
             item.Header = "blame 行";

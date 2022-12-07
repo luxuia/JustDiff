@@ -319,12 +319,44 @@ namespace ExcelMerge {
             }
         }
 
+        List<string> GetIdList(ISheet sheet, int startrow, int totalrow, int startcol, int colcount)
+        {
+            HashSet<string> idmap = new HashSet<string>();
+            List<string> header = new List<string>();
+
+            for (int i = startrow; i < totalrow; i++)
+            {
+                var row = sheet.GetRow(i);
+                if (row != null)
+                {
+                    string value = "";
+                    for (var j = startcol; j < startcol + colcount; ++j)
+                    {
+                        value += "|" + Util.GetCellValue(row.GetCell(j));
+                    }
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        header.Add(value);
+                        if (idmap.Contains(value) && colcount <5)
+                        {
+                            return GetIdList(sheet, startrow, totalrow, startcol, colcount+1);
+                        }
+                        idmap.Add(value);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+            return header;
+        }
+
         void CalValideIds(Config cfg)
         {
             for (int sheeti = 0; sheeti < book.NumberOfSheets; ++sheeti)
             {
                 var sheet = book.GetSheetAt(sheeti);
-                List<string> header = new List<string>();
 
                 var startpoint = SheetStartPoint[sheet.SheetName];
                 var startrow = startpoint.Item1;
@@ -332,23 +364,7 @@ namespace ExcelMerge {
                 var totalrow = SheetValideRow[sheet.SheetName];
                 var idcol = startcol + cfg.DefaultKeyID;
 
-                for (int i = startcol; i < totalrow; i++)
-                {
-                    var row = sheet.GetRow(i);
-                    if (row != null)
-                    {
-                        var val = Util.GetCellValue(row.GetCell(idcol));
-                        if (!string.IsNullOrWhiteSpace(val))
-                        {
-                            header.Add(val);
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                }
-                SheetIDs[sheet.SheetName] = header;
+                SheetIDs[sheet.SheetName] = GetIdList(sheet, startrow, totalrow, startcol, 1);
             }
         }
 
@@ -467,7 +483,7 @@ namespace ExcelMerge {
         public Dictionary<string, CellData> data = new Dictionary<string, CellData>();
         public int rowId;
         public string tag;
-        public int diffIdx;
+
         public int maxLineCount=1;
 
 

@@ -126,7 +126,6 @@ namespace ExcelMerge {
 
                         var data = new ExcelData();
                         data.tag = Tag as string;
-                        data.diffIdx = j;
                        // data.diffstatus = results;
                         data.rowId = j;
 
