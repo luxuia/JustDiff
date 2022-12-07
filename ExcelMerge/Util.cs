@@ -406,22 +406,19 @@ namespace ExcelMerge {
 
         public List<DiffResult<string2int>> diffFistColumn;
 
-        public List<SheetRowDiff> diffSheet;
+        public List<SheetRowDiff> diffSheet = new List<SheetRowDiff>();
 
-        public Dictionary<int, int> rowID2DiffMap1;
-        public Dictionary<int, int> rowID2DiffMap2;
+        public Dictionary<int, int> rowID2DiffMap1 = new Dictionary<int, int>();
+        public Dictionary<int, int> rowID2DiffMap2 = new Dictionary<int, int>();
 
-        public Dictionary<int, int> Diff2RowID1;
-        public Dictionary<int, int> Diff2RowID2;
+        public Dictionary<int, int> Diff2RowID1 = new Dictionary<int, int>();
+        public Dictionary<int, int> Diff2RowID2 = new Dictionary<int, int>();
 
-        public Dictionary<int, int> DiffMaxLineCount;
-
-        public HashSet<int> ignoreRow1;
-        public HashSet<int> ignoreRow2;
+        public Dictionary<int, int> DiffMaxLineCount = new Dictionary<int, int>();
 
         // 
-        public Dictionary<int, int[]> column2diff1;
-        public Dictionary<int, int[]> column2diff2;
+        public Dictionary<int, int[]> column2diff1 = new Dictionary<int, int[]>();
+        public Dictionary<int, int[]> column2diff2 = new Dictionary<int, int[]>();
 
         public bool changed;
     }

@@ -248,8 +248,7 @@ namespace ExcelMerge {
 
             var diffhead = optimized.ToList();
             status.diffHead = new SheetRowDiff() { diffcells = diffhead };
-            status.column2diff1 = new Dictionary<int, int[]>();
-            status.column2diff2 = new Dictionary<int, int[]>();
+
             status.column2diff1[0] = getColumn2Diff(diffhead, true);
             status.column2diff2[0] = getColumn2Diff(diffhead, false);
 
@@ -259,13 +258,6 @@ namespace ExcelMerge {
             status.diffFistColumn = GetIDDiffList(src, dst, 1, false, status.sortKey);
 
             changed = changed || status.diffFistColumn.Any(a => a.Status != DiffStatus.Equal);
-
-            status.diffSheet = new List<SheetRowDiff>();
-            status.rowID2DiffMap1 = new Dictionary<int, int>();
-            status.rowID2DiffMap2 = new Dictionary<int, int>();
-            status.Diff2RowID1 = new Dictionary<int, int>();
-            status.Diff2RowID2 = new Dictionary<int, int>();
-            status.DiffMaxLineCount = new Dictionary<int, int>();
 
             foreach (var diffkv in status.diffFistColumn) {
                 var rowid1 = diffkv.Obj1.Value;
