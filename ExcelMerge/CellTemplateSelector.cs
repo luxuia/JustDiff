@@ -14,16 +14,14 @@ using System.Net;
 namespace ExcelMerge {
     class CellTemplateSelector : DataTemplateSelector {
 
-        public CellTemplateSelector(string binder, int columnID, bool isEditing, string tag) {
+        public CellTemplateSelector(string binder, int columnID, string tag) {
             Binder = binder;
             ColumnID = columnID;
-            this.isEditing = isEditing;
             this.tag = tag;
         }
 
         public string Binder;
         public int ColumnID;
-        public bool isEditing;
         public string tag;
 
         public override System.Windows.DataTemplate SelectTemplate(object item, System.Windows.DependencyObject container) {
@@ -31,7 +29,6 @@ namespace ExcelMerge {
             if (rowdata != null) {
 
                 Brush bg = Brushes.White;
-                if (!isEditing) {
                     var rowdiff = rowdata.diffstatus;
                     if (rowdiff != null && rowdiff.diffcells.Count > ColumnID && ColumnID >= 0) {
                         var diffid = rowdata.column2diff[ColumnID];
@@ -55,10 +52,6 @@ namespace ExcelMerge {
                                     bg = Brushes.LightGreen;
                                 break;
                             default:
-                                if (rowdata.CellEdited != null && rowdata.CellEdited.ContainsKey(diffid) && rowdata.CellEdited[diffid] == CellEditMode.Self) {
-                                    // 单元格修改
-                                    bg = new SolidColorBrush(Color.FromRgb(160, 238, 225));
-                                }
                                 break;
                         }
                         if (diff_detail != null && diff_detail.Count > 1) {
@@ -97,15 +90,6 @@ namespace ExcelMerge {
                             return new DataTemplate() { VisualTree = textBlock };
                         }
                     }
-
-                } else {
-                    FrameworkElementFactory textBlock = new FrameworkElementFactory(typeof(TextBox));
-                    if (rowdata.data.ContainsKey(Binder)) {
-                        textBlock.SetValue(TextBox.TextProperty, rowdata.data[Binder].value);
-                    }
-                    return new DataTemplate() { VisualTree = textBlock };
-                }
-
             }
 
             return new DataTemplate() { VisualTree = new FrameworkElementFactory(typeof(TextBlock)) };

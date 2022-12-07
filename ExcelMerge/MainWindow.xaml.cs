@@ -165,51 +165,6 @@ namespace ExcelMerge {
             }
         }
 
-        internal void CopyCellsValue(string v, string otherTag, IList<DataGridCellInfo> selectCells) {
-            var srcSheet = books[v].GetCurSheet();
-            var dstSheet = books[otherTag].GetCurSheet();
-
-            var lines = new List<int>();
-            foreach (var cell in selectCells) {
-                var rowdata = cell.Item as ExcelData;
-                if (!lines.Contains(rowdata.rowId)) {
-                    lines.Add(rowdata.rowId);
-                }
-            }
-
-            if (!sheetsDiff.ContainsKey(srcSheet.SheetName)) {
-                return;
-            }
-            var status = sheetsDiff[srcSheet.SheetName];
-
-            foreach (var rowid in lines) {
-                var row = srcSheet.GetRow(rowid);
-
-                var diffrowid = v == "src" ? status.rowID2DiffMap1[rowid] : status.rowID2DiffMap2[rowid];
-                var torowid = otherTag == "src" ? status.Diff2RowID1[diffrowid]:status.Diff2RowID2[diffrowid];
-
-                var torow = dstSheet.GetRow(torowid);
-                if (torow == null) {
-                    torowid = books[otherTag].SheetValideRow[dstSheet.SheetName];
-                    dstSheet.CreateRow(torowid);
-
-                    torow = dstSheet.GetRow(torowid);
-                    for (int i = 0; i < books[v].SheetValideColumn[srcSheet.SheetName]; ++i) {
-                        torow.CreateCell(i);
-                    }
-                }
-
-                for (int i = 0; i < books[v].SheetValideColumn[srcSheet.SheetName]; ++i) {
-                    Util.CopyCell(row.GetCell(i), torow.GetCell(i));
-
-                    OnCellEdited(v, rowid, i, CellEditMode.OtherSide);
-                    OnCellEdited(otherTag, torowid, i, CellEditMode.Self);
-                }
-            }
-
-            RefreshCurSheet();
-        }
-
         internal void SetCellValue(string v, ICell targetCell) {
             targetCell.SetCellValue( v);
         }
@@ -311,8 +266,6 @@ namespace ExcelMerge {
             status.Diff2RowID1 = new Dictionary<int, int>();
             status.Diff2RowID2 = new Dictionary<int, int>();
             status.DiffMaxLineCount = new Dictionary<int, int>();
-            status.RowEdited1 = status.RowEdited1?? new Dictionary<int, Dictionary<int, CellEditMode>>();
-            status.RowEdited2 = status.RowEdited2?? new Dictionary<int, Dictionary<int, CellEditMode>>();
 
             foreach (var diffkv in status.diffFistColumn) {
                 var rowid1 = diffkv.Obj1.Value;
@@ -347,13 +300,6 @@ namespace ExcelMerge {
 
                 status.Diff2RowID1[diffIdx] = rowid1;
                 status.Diff2RowID2[diffIdx] = rowid2;
-
-                if (!status.RowEdited1.ContainsKey(rowid1)) {
-                    status.RowEdited1[rowid1] = new Dictionary<int, CellEditMode>();
-                }
-                if (!status.RowEdited2.ContainsKey(rowid2)) {
-                    status.RowEdited2[rowid2] = new Dictionary<int, CellEditMode>();
-                }
 
                 var rowdiff = new SheetRowDiff();
                 rowdiff.diffcells = diffrow;
@@ -669,20 +615,6 @@ namespace ExcelMerge {
 
         public void ReDiffFile() {
             Diff(SrcFile, DstFile);
-        }
-
-        public void OnCellEdited(string tag, int rowid, int columnid, CellEditMode mode) {
-            Dictionary<int, Dictionary<int, CellEditMode>> edited;
-            if (tag == "src") {
-                var src_sheet = books["src"].sheetname;
-
-                edited = sheetsDiff[src_sheet].RowEdited1;
-            } else {
-                var src_sheet = books["dst"].sheetname;
-
-                edited = sheetsDiff[src_sheet].RowEdited2;
-            }
-            edited[rowid][columnid] = mode;
         }
   
         List<string> GetHeaderStrList(WorkBookWrap wrap, ISheet sheet) {

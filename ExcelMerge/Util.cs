@@ -391,11 +391,6 @@ namespace ExcelMerge {
         Merge,
     }
 
-    public enum CellEditMode {
-        Self, // 自己修改
-        OtherSide, // 另一边的格子修改
-    }
-
     public class SheetRowDiff {
         public List<DiffResult<string>> diffcells;
         public List<List<DiffResult<char>>> diffcell_details;
@@ -420,9 +415,6 @@ namespace ExcelMerge {
         public Dictionary<int, int> Diff2RowID2;
 
         public Dictionary<int, int> DiffMaxLineCount;
-
-        public Dictionary<int, Dictionary<int, CellEditMode>> RowEdited1;
-        public Dictionary<int, Dictionary<int, CellEditMode>> RowEdited2;
 
         public HashSet<int> ignoreRow1;
         public HashSet<int> ignoreRow2;
@@ -489,7 +481,6 @@ namespace ExcelMerge {
 
         public SheetRowDiff diffstatus;
         public Dictionary<int, int> RowID2DiffMap;
-        public Dictionary<int, CellEditMode> CellEdited;
 
         public int[] column2diff;
   
@@ -505,17 +496,6 @@ namespace ExcelMerge {
             }
             result = "";
             return false;
-        }
-
-        public override bool TrySetMember(SetMemberBinder binder, object value) {
-            var ret = data[binder.Name];
-            ret.value = value as string;
-            ret.cell.SetCellValue(ret.value);
-
-            MainWindow.instance.OnCellEdited(tag, rowId, ret.cell.ColumnIndex, CellEditMode.Self);
-            MainWindow.instance.RefreshCurSheet();
-  
-            return true;
         }
     }
 

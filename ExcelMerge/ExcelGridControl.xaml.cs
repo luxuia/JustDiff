@@ -99,12 +99,6 @@ namespace ExcelMerge {
 
         }
 
-        private void Menu_CopyToSide(object sender, RoutedEventArgs e) {
-            var selectCells = ExcelGrid.SelectedCells;
-            //var text = Clipboard.GetText(TextDataFormat.Html);
-            MainWindow.instance.CopyCellsValue(Tag as string, otherTag, selectCells);
-        }
-
         private void Menu_BlameLine(object sender, RoutedEventArgs e)
         {
             var selectCells = ExcelGrid.SelectedCells;
@@ -132,7 +126,7 @@ namespace ExcelMerge {
                 var tag = Tag as string;
                 var wrap = MainWindow.instance.books[tag];
 
-                MainWindow.instance.FindCellEdit(wrap, rowdata.rowId, cell.Column.index);
+                MainWindow.instance.FindCellEdit(wrap, rowdata.rowId, cell.Column.DisplayIndex);
                 break;
             }
         }
@@ -220,8 +214,8 @@ namespace ExcelMerge {
 
                         var tc = new DataGridTemplateColumn();
                         tc.Header = strshow;
-                        tc.CellTemplateSelector = new CellTemplateSelector(encodestr, i, false, tag);
-                        tc.CellEditingTemplateSelector = new CellTemplateSelector(encodestr, i, true, tag);
+                        tc.CellTemplateSelector = new CellTemplateSelector(encodestr, i, tag);
+                        tc.CellEditingTemplateSelector = new CellTemplateSelector(encodestr, i, tag);
 
                         columns.Add(tc);
 
@@ -237,8 +231,8 @@ namespace ExcelMerge {
 
                         var tc = new DataGridTemplateColumn();
                         tc.Header = str;
-                        tc.CellTemplateSelector = new CellTemplateSelector(str, i, false, tag);
-                        tc.CellEditingTemplateSelector = new CellTemplateSelector(str, i, true, tag);
+                        tc.CellTemplateSelector = new CellTemplateSelector(str, i, tag);
+                        tc.CellEditingTemplateSelector = new CellTemplateSelector(str, i, tag);
 
                         columns.Add(tc);
 
@@ -274,13 +268,12 @@ namespace ExcelMerge {
                     }
                 }
 
-                Dictionary<int, Dictionary<int, CellEditMode>> edited = issrc ? status.RowEdited1 : status.RowEdited2;
 
                 for (int j = 0; j< status.diffSheet.Count; j++) {
                     int rowid = issrc ? status.Diff2RowID1[j] : status.Diff2RowID2[j];
 
                     // 修改过，或者是
-                    if (edited[rowid].Count > 0 || status.diffSheet[j].changed) {
+                    if ( status.diffSheet[j].changed) {
        
                         var row = sheet.GetRow(rowid);
 
@@ -288,7 +281,6 @@ namespace ExcelMerge {
                         data.rowId = rowid;
                         data.tag = Tag as string;
                         data.diffstatus = status.diffSheet[j];
-                        data.CellEdited = edited[rowid];
                         data.column2diff = issrc ? status.column2diff1[rowid] : status.column2diff2[rowid];
 
                         data.data["rowid"] = new CellData() { value = (rowid+1).ToString() };
@@ -309,12 +301,8 @@ namespace ExcelMerge {
             ExcelGrid.ItemsSource = datas;
 
             CtxMenu.Items.Clear();
-            var item = new MenuItem();
-            item.Header = "行复制到" + (issrc ? "右侧" : "左侧");
-            item.Click += Menu_CopyToSide;
-            //CtxMenu.Items.Add(item);
 
-            item = new MenuItem();
+            var item = new MenuItem();
             item.Header = "blame 行";
             item.Click += Menu_BlameLine;
             CtxMenu.Items.Add(item);
