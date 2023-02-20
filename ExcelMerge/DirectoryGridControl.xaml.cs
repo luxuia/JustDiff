@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -79,9 +79,7 @@ namespace ExcelMerge {
 
         private void FileGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             if (e.AddedItems.Count > 0) {
-                // chang selected row
-                var row = e.AddedItems[0] as ExcelData;
-                if (row != null) {
+                if (e.AddedItems[0] is ExcelData row) {
                     // 新行 NewRowItem 类
                     DirectoryDifferWindow.instance.OnSelectGridRow(Tag as string, row.rowId);
                 }
