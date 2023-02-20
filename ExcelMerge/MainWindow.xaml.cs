@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -107,7 +107,7 @@ namespace ExcelMerge {
         }
 
         public void ShowDirectoryWindow(string[] dirs, string tag) {
-            dirWindow = dirWindow != null ? dirWindow : new DirectoryDifferWindow();
+            dirWindow = dirWindow ?? new DirectoryDifferWindow();
             dirWindow.Show();
 
             dirWindow.OnSetDirs(dirs, tag);
