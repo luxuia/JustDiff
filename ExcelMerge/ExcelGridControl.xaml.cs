@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -352,9 +352,8 @@ namespace ExcelMerge {
         private void ExcelGrid_LoadingRow(object sender, DataGridRowEventArgs e) {
             var row = e.Row;
             var index = row.GetIndex();
-            var item = row.Item as ExcelData;
 
-            if (item != null) { 
+            if (row.Item is ExcelData item) { 
                 row.Header = (item.rowId+1).ToString();
                 row.Height = item.maxLineCount * 15+5;
             }
@@ -370,9 +369,7 @@ namespace ExcelMerge {
 
         private void ExcelGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             if (e.AddedItems.Count > 0) {
-                // chang selected row
-                var row = e.AddedItems[0] as ExcelData;
-                if (row != null) {
+                if (e.AddedItems[0] is ExcelData row) {
                     // 新行 NewRowItem 类
                     //MainWindow.instance.OnSelectGridRow(Tag as string, row.rowId);
                 }

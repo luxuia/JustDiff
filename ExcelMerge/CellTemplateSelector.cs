@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,8 +25,7 @@ namespace ExcelMerge {
         public string tag;
 
         public override System.Windows.DataTemplate SelectTemplate(object item, System.Windows.DependencyObject container) {
-            ExcelData rowdata = item as ExcelData;
-            if (rowdata != null) {
+            if (item is ExcelData rowdata) {
 
                 Brush bg = Brushes.White;
                     var rowdiff = rowdata.diffstatus;

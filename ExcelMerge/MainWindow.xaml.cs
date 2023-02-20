@@ -946,8 +946,7 @@ namespace ExcelMerge {
             var sheetdata = sheetsDiff[src_sheet];
 
             if (e.AddedItems.Count > 0) {
-                var sortkey = e.AddedItems[0] as SheetSortKeyCombo;
-                if (sortkey != null && sheetdata.sortKey != sortkey.ID) {
+                if (e.AddedItems[0] is SheetSortKeyCombo sortkey && sheetdata.sortKey != sortkey.ID) {
                     sheetdata.sortKey = sortkey.ID;
 
                     ReDiffCurSheet();
