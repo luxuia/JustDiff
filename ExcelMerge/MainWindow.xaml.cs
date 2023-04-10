@@ -619,13 +619,13 @@ namespace ExcelMerge {
                 var list = new List<IRow>();
                 for (int i = startrow; i < DiffStartIdx(startrow); ++i) {
                     var row = sheet.GetRow(i);
-                    if (row == null) return null;
+                    if (row == null) continue;
                     list.Add(row);
                 }
                 
                 for (int i = startcol; i < list[0].Cells.Count; ++i) {
                     var str = "";
-                    for (int j = 0; j < DiffStartIdx(0); ++j) {
+                    for (int j = 0; j < list.Count; ++j) {
                         var cell_s = Util.GetCellValue(list[j].GetCell(i));
                         if (j == 0 && string.IsNullOrWhiteSpace(cell_s)) {
                             return header;
