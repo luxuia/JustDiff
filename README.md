@@ -1,4 +1,4 @@
-# ExcelMerge
+# JustDiff
 
 [![Build status](https://ci.appveyor.com/api/projects/status/ven9wb4k5wrrajub?svg=true)](https://ci.appveyor.com/project/luxuia/excelmerge)
 
