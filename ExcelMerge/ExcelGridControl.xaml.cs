@@ -313,39 +313,10 @@ namespace ExcelMerge {
             CtxMenu.Items.Add(item);
         }
 
-        public void HandleFileOpen(string file, FileOpenType type, string tag) {
-            var wb = Util.GetWorkBook(file);
-
-            if (wb != null) {
-                var window = MainWindow.instance;
-
-                if (tag == "src") {
-                    window.books.Clear();
-                }
-                window.OnFileLoaded(file, tag, type);
-                RefreshData();
-            }
-        }
-
         private void ExcelGrid_Drop(object sender, DragEventArgs e) {
             if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
                 var files = e.Data.GetData(DataFormats.FileDrop) as string[];
-                
-                if (files != null && files.Any()) {
-                    var file = files[0];
-                    if (Directory.Exists(file)) {
-                        MainWindow.instance.ShowDirectoryWindow(files, Tag as string);
-                    }
-                    else {
-                        HandleFileOpen(files[0], FileOpenType.Drag, Tag as string);
-
-                        if (files.Length > 1) {
-                            HandleFileOpen(files[1], FileOpenType.Drag, otherTag);
-
-                            MainWindow.instance.ReDiffFile();
-                        }
-                    }
-                }
+                Entrance.OnDragFile(files, isSrc);
             }
         }
 

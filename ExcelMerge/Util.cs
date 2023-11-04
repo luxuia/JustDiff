@@ -386,11 +386,6 @@ namespace ExcelMerge {
         Prog, //因为diff等形式从程序内部打开的
     }
 
-    public enum Mode {
-        Diff,
-        Merge,
-    }
-
     public class SheetRowDiff {
         public List<DiffResult<string>> diffcells;
         public List<List<DiffResult<char>>> diffcell_details;

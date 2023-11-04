@@ -21,6 +21,8 @@ using string2int = System.Collections.Generic.KeyValuePair<string, int>;
 using System.IO;
 using Newtonsoft.Json;
 using Microsoft.Win32;
+using NPOI.Util;
+
 namespace ExcelMerge {
 
     /// <summary>
@@ -38,17 +40,7 @@ namespace ExcelMerge {
 
         public Dictionary<string, Dictionary<int, ExcelData>> excelGridData = new Dictionary<string, Dictionary<int, ExcelData>>();
 
-
-        public string SrcFile;
-        public string DstFile;
-
-        public List<string> _tempFiles = new List<string>();
-
-        public Mode mode = Mode.Diff;
-
         public DirectoryDifferWindow dirWindow;
-
- 
 
         static string ConfigPath = "config.json";
 
@@ -115,54 +107,6 @@ namespace ExcelMerge {
 
         public void DataGrid_SelectedCellsChanged(object sender, SelectionChangedEventArgs e) {
 
-        }
-
-        // load进来单个文件的情况
-        public void OnFileLoaded(string file, string tag, FileOpenType type, int sheet = 0) {
-            file = file.Replace("\\", "/");
-
-            foreach (var reg in config.NoHeadPaths) {
-                if (System.Text.RegularExpressions.Regex.Match(file, reg).Length > 0) {
-                    ProcessHeader.IsChecked = false;
-                }
-            }
-
-            var wb = new WorkBookWrap(file, config);
-
-            books[tag] = wb;
-
-            if (type == FileOpenType.Drag) {
-                if (tag == "src")
-                    SrcFile = file;
-                else
-                    DstFile = file;
-                UpdateSVNRevision(file, tag);
-            }
-
-            if (tag == "src") {
-                SrcFilePath.Content = file;
-                List<ComboBoxItem> list = new List<ComboBoxItem>();
-                SrcFileSheetsCombo.Items.Clear();
-                for (int i = 0; i < wb.book.NumberOfSheets; ++i) {
-                    var item = new ComboBoxItem();
-                    item.Content = new SheetNameCombo() { Name = wb.book.GetSheetName(i), ID = i };
-                    SrcFileSheetsCombo.Items.Add(item);
-                    list.Add(item);
-                }
-                SrcFileSheetsCombo.SelectedItem = list[0];
-            }
-            else if (tag == "dst") {
-                DstFilePath.Content = file;
-                List<ComboBoxItem> list = new List<ComboBoxItem>();
-                DstFileSheetsCombo.Items.Clear();
-                for (int i = 0; i < wb.book.NumberOfSheets; ++i) {
-                    var item = new ComboBoxItem();
-                    item.Content = new SheetNameCombo() { Name = wb.book.GetSheetName(i), ID = i };
-                    DstFileSheetsCombo.Items.Add(item);
-                    list.Add(item);
-                }
-                DstFileSheetsCombo.SelectedItem = list[0];
-            }
         }
 
         internal void SetCellValue(string v, ICell targetCell) {
@@ -321,28 +265,12 @@ namespace ExcelMerge {
             return status;
         }
         
-        public void DiffList(string[] difflist) {
-            if (difflist.Length < 2) return;
+        public void Refresh() {
+            var file1 = Entrance.SrcFile;
+            var file2 = Entrance.DstFile;
 
-            var file = difflist[0];
-            string[] vs = new string[difflist.Length - 1];
-            Array.Copy(difflist, 1, vs, 0, difflist.Length - 1);
-
-            var versions = vs.Select((r) => { return int.Parse(r); }).ToList();
-            versions.Sort();
-
-            SrcFile = file;
-
-            DiffUri(versions[0] - 1, versions[versions.Count-1], new Uri("http://m1.svn.ejoy.com/m1/" + file));
-        }
-
-        public void Diff(string file1, string file2, bool resetInitFile = true) {
             if (string.IsNullOrEmpty(file1) || string.IsNullOrEmpty(file2)) return;
 
-            if (resetInitFile) {
-                SrcFile = file1;
-                DstFile = file2;
-            }
 
             string oldsheetName = null;
             if (books.ContainsKey("src")) {
@@ -456,26 +384,14 @@ namespace ExcelMerge {
             return ProcessHeader.IsChecked == true ? config.HeadCount+ emptyline : emptyline;
         }
 
-        string GetVersionFile(SvnClient client, Uri uri, long revision)
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            var tempDir = System.IO.Path.GetTempPath();
-            var filename = System.IO.Path.GetFileName(uri.LocalPath);
-
-            var file = tempDir + revision + "_" + filename;
-            var checkoutArgs = new SvnWriteArgs() { Revision = revision };
-            using (var fs = System.IO.File.Create(file))
-            {
-                client.Write(uri, fs, checkoutArgs);
-            }
-
-            _tempFiles.Add(file);
-
-            return file;
+            Entrance.Window_Closing(this, e);
         }
 
         bool CheckIfVersionExists(SvnClient client, Uri uri, long revision, string sheet_name, string id, string header, string value)
         {
-            var file = GetVersionFile(client, uri, revision);
+            var file = Entrance.GetVersionFile(client, uri, revision);
 
             var wrap = new WorkBookWrap(file, config);
 
@@ -502,8 +418,6 @@ namespace ExcelMerge {
 
             return false;
         }
-
-
 
         public void FindCellEdit(WorkBookWrap wrap, int rowid, int col_id)
         {
@@ -553,45 +467,11 @@ namespace ExcelMerge {
                 }
                 if (revision > 0)
                 {
-                    DiffUri(revision - 1, revision, uri);
+                    Entrance.DiffUri(revision - 1, revision, uri);
                 }
             }
         }
 
-        public void DiffUri(long revision, long revisionto, Uri uri) {
-            using (SvnClient client = new SvnClient()) {
-
-                var file1 = GetVersionFile(client, uri, revision);
-
-                var file2 = GetVersionFile(client, uri, revisionto);
-
-                Diff(file1, file2, false);
-            }
-        }
-
-        public void DiffUri(long revision, Uri uri, long cmprevision, Uri cmpuri)
-        {
-            using (SvnClient client = new SvnClient())
-            {
-                var file1 = GetVersionFile(client, uri, revision);
-
-                var file2 = GetVersionFile(client, cmpuri, cmprevision);
-
-                Diff(file1, file2, false);
-            }
-        }
-
-        public void Diff(long revision, long revisionto) {
-            Uri uri;
-            using (SvnClient client = new SvnClient()) {
-                string file = SrcFile;
-                SvnInfoEventArgs info;
-                client.GetInfo(file, out info);
-                uri = info.Uri;
-            }
-            DiffUri(revision, revisionto, uri);
-        }
-    
         public void RefreshCurSheet() {
             Dispatcher.BeginInvoke(new Action(ReDiffCurSheet));
         }
@@ -606,7 +486,7 @@ namespace ExcelMerge {
         }
 
         public void ReDiffFile() {
-            Diff(SrcFile, DstFile);
+            Refresh();
         }
   
         List<string> GetHeaderStrList(WorkBookWrap wrap, ISheet sheet) {
@@ -874,7 +754,7 @@ namespace ExcelMerge {
             var selection = e.AddedItems[0] as SvnRevisionCombo;
             SVNRevisionCombo.Width = Math.Min(selection.Revision.Length*10, 440);
 
-            Diff(selection.ID - 1, selection.ID);
+            Entrance.Diff(selection.ID - 1, selection.ID);
         }
 
         public void OnGridScrollChanged(string tag, ScrollChangedEventArgs e) {
@@ -899,41 +779,12 @@ namespace ExcelMerge {
             }
         }
 
-        private void RadioButton_Checked(object sender, RoutedEventArgs e) {
-            if ((sender as RadioButton).Content as string == Mode.Diff.ToString()) {
-                mode = Mode.Diff;
-            } else {
-                mode = Mode.Merge;
-            }
-        }
-
         private void DoDiff_Click(object sender, RoutedEventArgs e) {
-            Diff(SrcFile, DstFile);
-        }
-
-        private void ApplyChange_Click(object sender, RoutedEventArgs e) {
-            var oldfile = books["dst"].file;
-            var filepath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(oldfile), System.IO.Path.GetFileNameWithoutExtension(oldfile) + "_apply.xls");
-            System.IO.File.Copy(oldfile, filepath, true);
-
-            using (var dstfile = File.Open(filepath, FileMode.OpenOrCreate, FileAccess.Write)) {
-
-                books["dst"].book.Write(dstfile);
-
-                dstfile.Flush();
-            }
-        }
-
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
-            foreach (var file in _tempFiles) {
-                if (File.Exists(file)) {
-                    File.Delete(file);
-                }
-            }
+            Refresh();
         }
 
         private void SimpleHeader_Checked(object sender, RoutedEventArgs e) {
-            Diff(SrcFile, DstFile);
+            Refresh();
         }
 
         private void SVNVersionBtn_Click(object sender, RoutedEventArgs e) {

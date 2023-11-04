@@ -161,11 +161,12 @@ namespace ExcelMerge {
             var res = results[rowid];
             if (res.Status == DiffStatus.Modified) {
                 if (resultRevisions.Count < results.Count) {
-                    MainWindow.instance.Diff(src.root + res.Obj1, dst.root + res.Obj2);
+                    Entrance.Diff(src.root + res.Obj1, dst.root + res.Obj2);
                 } else {
                     var range = resultRevisions[rowid];
-                    MainWindow.instance.OnFileLoaded(src.root + range.file, "src", FileOpenType.Drag);
-                    MainWindow.instance.Diff(range.min, range.max);
+                    Entrance.SrcFile = src.root + range.file;
+                    //MainWindow.instance.OnFileLoaded(, "src", FileOpenType.Drag);
+                    Entrance.Diff(range.min, range.max);
                 }
             }
         }
