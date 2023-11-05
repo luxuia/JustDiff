@@ -18,8 +18,8 @@ namespace ExcelMerge
         public static string SrcFile;
         public static string DstFile;
 
-        static MainWindow XLSDiffWindow = null;
-        static YAMLDifferWindow YAMLWindow = null;
+        public static MainWindow XLSDiffWindow = null;
+        public static YAMLDifferWindow YAMLWindow = null;
 
         public static void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
@@ -67,7 +67,7 @@ namespace ExcelMerge
                     }
                     else
                     {
-                        DstFile = files[1];
+                        DstFile = files[0];
                     }
 
                     if (files.Length > 1)
@@ -78,7 +78,7 @@ namespace ExcelMerge
                         }
                         else
                         {
-                            DstFile = files[2];
+                            DstFile = files[1];
                         }
                     }
 
@@ -93,14 +93,16 @@ namespace ExcelMerge
             DstFile = file2;
 
             var ext = Path.GetExtension(file1);
-            if (ext == ".prefab" || ext == ".scene")
+            if (ext == ".prefab" || ext == ".scene" || true)
             {
                 if (YAMLWindow == null)
                 {
                     YAMLWindow = new YAMLDifferWindow();
                     YAMLWindow.Show();
                 }
-                
+                YAMLWindow.Refresh();
+
+
             } else //if (ext == ".xls" || ext == ".xlsx")
             {
                 if (XLSDiffWindow == null)

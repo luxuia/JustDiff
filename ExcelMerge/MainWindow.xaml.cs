@@ -105,13 +105,6 @@ namespace ExcelMerge {
             dirWindow.OnSetDirs(dirs, tag);
         }
 
-        public void DataGrid_SelectedCellsChanged(object sender, SelectionChangedEventArgs e) {
-
-        }
-
-        internal void SetCellValue(string v, ICell targetCell) {
-            targetCell.SetCellValue( v);
-        }
 
         void UpdateSVNRevision(string file, string tag) {
             if (tag == "src") {

@@ -6,12 +6,16 @@
              xmlns:local="clr-namespace:ExcelMerge"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
+    <Grid AllowDrop="True" Drop="Grid_Drop">
 		<TreeView Name="yamltree">
+			<Style TargetType="TreeViewItem">
+				<Setter Property="IsExpanded" 
+                Value="True" />
+			</Style>
 			<TreeView.Resources>
-				<HierarchicalDataTemplate DataType="{x:Type local:YamlGameObject}" ItemsSource="{Binding childs}">
+				<HierarchicalDataTemplate DataType="{x:Type local:YamlGameObject}" ItemsSource="{Binding childs}"  >
 					<StackPanel Orientation="Horizontal">
-						<TextBlock Text="{Binding name}" />
+						<TextBlock Text="{Binding name}" Background="{Binding brush}" />
 					</StackPanel>
 				</HierarchicalDataTemplate>
 			</TreeView.Resources>

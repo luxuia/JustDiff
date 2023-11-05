@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ExcelMerge"
         mc:Ignorable="d"
-        Title="YAMLDifferWindow" Height="450" Width="800">
+        Title="YAMLDifferWindow" Height="450" Width="800"
+		ContentRendered="Window_ContentRendered">
     <Grid>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="78"/>
