@@ -8,7 +8,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelMerge", "ExcelMerge\Ex
 		{B666D83B-68A5-482E-A2AD-91D0E3038784} = {B666D83B-68A5-482E-A2AD-91D0E3038784}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnityYamlParser", "C:\Users\luxui\source\repos\UnityYamlParser\UnityYamlParser.csproj", "{B666D83B-68A5-482E-A2AD-91D0E3038784}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnityYamlParser", "UnityYamlParser\UnityYamlParser.csproj", "{B666D83B-68A5-482E-A2AD-91D0E3038784}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
