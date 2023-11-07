@@ -74,9 +74,6 @@
     <Resource Include="icon.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="C:\Users\luxui\source\repos\UnityYamlParser\UnityYamlParser.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="NPOI" Version="2.5.6" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
@@ -90,5 +87,8 @@
     <Compile Remove="NetDiff\obj\Debug\.NETFramework,Version=v4.5.2.AssemblyAttributes.cs" />
     <Compile Remove="NetDiff\obj\Release\.NETFramework,Version=v4.5.2.AssemblyAttributes.cs" />
     <Compile Remove="NetDiff\Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UnityYamlParser\UnityYamlParser.csproj" />
   </ItemGroup>
 </Project>
