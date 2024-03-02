@@ -93,7 +93,7 @@ namespace ExcelMerge
             DstFile = file2;
 
             var ext = Path.GetExtension(file1);
-            if (ext == ".prefab" || ext == ".scene" || true)
+            if (ext == ".prefab" || ext == ".scene")
             {
                 if (YAMLWindow == null)
                 {
