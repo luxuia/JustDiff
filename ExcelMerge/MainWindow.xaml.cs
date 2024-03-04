@@ -496,6 +496,10 @@ namespace ExcelMerge {
                     list.Add(row);
                 }
                 
+                if (list.Count == 0)
+                {
+                    return null;
+                }
                 for (int i = startcol; i < list[0].Cells.Count; ++i) {
                     var str = "";
                     for (int j = 0; j < list.Count; ++j) {

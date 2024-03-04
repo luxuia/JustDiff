@@ -74,11 +74,11 @@ namespace ExcelMerge
                     {
                         if (isSrc)
                         {
-                            SrcFile = files[1];
+                            DstFile = files[1];
                         }
                         else
                         {
-                            DstFile = files[1];
+                            SrcFile = files[1];
                         }
                     }
 
