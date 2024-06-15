@@ -165,6 +165,7 @@ namespace ExcelMerge {
             return ret;
         }
 
+        // 对比两个sheet
         SheetDiffStatus DiffSheet(ISheet src, ISheet dst, SheetDiffStatus status = null) {
             status = status??new SheetDiffStatus() { sortKey = config.DefaultKeyID };
 
@@ -313,6 +314,9 @@ namespace ExcelMerge {
                             dstSheetID = sheetidx;
                         }
                     }
+                } else
+                {
+                    // 新增sheet，直接完整显示
                 }
             }
 
@@ -504,12 +508,13 @@ namespace ExcelMerge {
                     var str = "";
                     for (int j = 0; j < list.Count; ++j) {
                         var cell_s = Util.GetCellValue(list[j].GetCell(i));
-                        if (j == 0 && string.IsNullOrWhiteSpace(cell_s)) {
-                            return header;
-                        }
+                   
                         str = str + (j > 0 ? ":" + cell_s : cell_s);
                     }
-                   
+                    if (string.IsNullOrWhiteSpace(str))
+                    {
+                        return header;
+                    }
                     header.Add(str);
                 }
             } else {
