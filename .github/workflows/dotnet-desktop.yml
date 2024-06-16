@@ -62,7 +62,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        ssubmoduels: recursive
 
     # Install the .NET Core workload
     - name: Install .NET Core
