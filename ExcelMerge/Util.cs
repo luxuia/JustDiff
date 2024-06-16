@@ -165,6 +165,18 @@ namespace ExcelMerge {
 
             return true;
         }
+
+        public static string NumberToExcelColumnId(int number)
+        {
+            StringBuilder sb = new StringBuilder();
+            while (number > 0)
+            {
+                number--;
+                sb.Insert(0, (char)('A' + (number % 26)));
+                number /= 26;
+            }
+            return sb.ToString();
+        }
     }
     public class Config
     {
@@ -416,6 +428,8 @@ namespace ExcelMerge {
         public Dictionary<int, int[]> column2diff1 = new Dictionary<int, int[]>();
         public Dictionary<int, int[]> column2diff2 = new Dictionary<int, int[]>();
 
+        public bool isConfigDiff = false;
+
         public bool changed;
     }
 
@@ -498,5 +512,6 @@ namespace ExcelMerge {
 
         public List<YamlDiffNode> childs = new List<YamlDiffNode>();
     }
+
 
 }

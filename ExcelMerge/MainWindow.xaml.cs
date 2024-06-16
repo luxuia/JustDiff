@@ -146,7 +146,7 @@ namespace ExcelMerge {
             }
         }
 
-
+        //计算修改的列id 是 对应的第几列
         int[] getColumn2Diff(List<DiffResult<string>> diff, bool from) {
             int idx = 0;
             var ret = new int[diff.Count];
@@ -165,10 +165,14 @@ namespace ExcelMerge {
             return ret;
         }
 
-        // 对比两个sheet
-        SheetDiffStatus DiffSheet(ISheet src, ISheet dst, SheetDiffStatus status = null) {
-            status = status??new SheetDiffStatus() { sortKey = config.DefaultKeyID };
 
+        // 对比两个配置表格式的excel
+        SheetDiffStatus DiffConfigSheet(ISheet src, ISheet dst, SheetDiffStatus status = null)
+        {
+            if (src == null || dst == null)
+            {
+                return null;
+            }
             bool changed = false;
 
             var srcwrap = books["src"];
@@ -176,7 +180,9 @@ namespace ExcelMerge {
 
             var head1 = GetHeaderStrList(srcwrap, src);
             var head2 = GetHeaderStrList(dstwrap, dst);
-            if (head1 == null || head2 == null) return null;
+            if (head1 == null || head2 == null || head1.Count == 0 || head2.Count == 0) return null;
+
+            status = status ?? new SheetDiffStatus() { sortKey = config.DefaultKeyID };
 
             var diff = NetDiff.DiffUtil.Diff(head1, head2);
             //var optimized = diff.ToList();// NetDiff.DiffUtil.OptimizeCaseDeletedFirst(diff);
@@ -192,7 +198,7 @@ namespace ExcelMerge {
 
             srcwrap.SheetValideColumn[src.SheetName] = head1.Count;
             dstwrap.SheetValideColumn[dst.SheetName] = head2.Count;
-            
+
             status.diffFistColumn = GetIDDiffList(src, dst, 1, false, status.sortKey);
 
             changed = changed || status.diffFistColumn.Any(a => a.Status != DiffStatus.Equal);
@@ -212,13 +218,188 @@ namespace ExcelMerge {
 
                 if (diffkv.Obj1.Key == null) {
                     // 创建新行，方便比较,放在后面是为了保证diff的时候是new,delete的形式，而不是modify
-                    rowid1 =  books["src"].SheetValideRow[src.SheetName];
+                    rowid1 = books["src"].SheetValideRow[src.SheetName];
                     //src.CreateRow(rowid1);
                 }
                 if (diffkv.Obj2.Key == null) {
                     rowid2 = books["dst"].SheetValideRow[dst.SheetName];
                     //dst.CreateRow(rowid2);
                 }
+                status.column2diff1[rowid1] = getColumn2Diff(diffrow, true);
+                status.column2diff2[rowid2] = getColumn2Diff(diffrow, false);
+
+                int diffIdx = status.diffSheet.Count;
+                status.DiffMaxLineCount[diffIdx] = maxLineCount;
+
+                status.rowID2DiffMap1[rowid1] = diffIdx;
+                status.rowID2DiffMap2[rowid2] = diffIdx;
+
+                status.Diff2RowID1[diffIdx] = rowid1;
+                status.Diff2RowID2[diffIdx] = rowid2;
+
+                var rowdiff = new SheetRowDiff();
+                rowdiff.diffcells = diffrow;
+
+                rowdiff.changed = diffrow.Any(a => a.Status != DiffStatus.Equal);
+                if (rowdiff.changed)
+                {
+                    rowdiff.diffcell_details = new List<List<DiffResult<char>>>();
+                    foreach (var cell in diffrow)
+                    {
+                        if (cell.Status == DiffStatus.Modified)
+                        {
+                            var cell_diff = NetDiff.DiffUtil.Diff(cell.Obj1, cell.Obj2);
+                            //var optimized = diff.ToList();// NetDiff.DiffUtil.OptimizeCaseDeletedFirst(diff);
+                            var opt_cell_diff = DiffUtil.OptimizeCaseDeletedFirst(cell_diff);
+
+                            rowdiff.diffcell_details.Add(opt_cell_diff.ToList());
+                        }
+                        else
+                        {
+                            rowdiff.diffcell_details.Add(null);
+                        }
+                    }
+                }
+                status.diffSheet.Add(rowdiff);
+
+                changed = changed || rowdiff.changed;
+            }
+
+            status.changed = changed;
+            status.isConfigDiff = true;
+
+            return status;
+        }
+
+        bool isConfigSheet(ISheet src, ISheet dst)
+        {
+            return true;
+        }
+
+        // 对比两个sheet
+        SheetDiffStatus DiffSheet(ISheet src, ISheet dst, SheetDiffStatus status = null) 
+        {
+            SheetDiffStatus ret = null;
+            if (ProcessHeader.IsChecked == true)
+            {
+                ret = DiffConfigSheet(src, dst, status);
+            } 
+            if (ret == null) {
+                ret = DiffCommonSheet(src, dst, status);
+            }
+            return ret;
+        }
+        List<string> GetCommonHeaderStrList(WorkBookWrap wrap, ISheet sheet)
+        {
+            List<string> header = new List<string>();
+
+            if (sheet != null)
+            {
+                var it = sheet.GetRowEnumerator();
+                var min_col = 10000000;
+                var max_col = -1;
+                var min_row = 10000000;
+                var max_row = -1;
+                while (it.MoveNext())
+                {
+                    if (it.Current is IRow row){
+                        min_col = Math.Min(row.FirstCellNum, min_col);
+                        max_col = Math.Max(row.LastCellNum, max_col);
+
+                        min_row = Math.Min(row.RowNum, min_row);
+                        max_row = Math.Max(row.RowNum, max_row);
+                    }
+                }
+
+                if (max_col > 0 )
+                {
+                    wrap.SheetValideRow[sheet.SheetName] = max_row;
+                    wrap.SheetStartPoint[sheet.SheetName] = new Tuple<int, int>(min_row, 0);
+
+                    for (var i = 0; i <= max_col; i++)
+                    {
+                        header.Add((i+1).ToString());
+                    }
+                }
+            }
+            return header;
+        }
+
+        List<DiffResult<string2int>> GetCommonIDDiffList(ISheet sheet1, ISheet sheet2)
+        {
+
+            Action<WorkBookWrap, ISheet, List<string2int>> search = (WorkBookWrap wrap, ISheet sheet, List<string2int> list) => {
+                var nameHash = new HashSet<string>();
+
+                var max_idx = wrap.SheetValideRow[sheet.SheetName];
+                var min_idx = wrap.SheetStartPoint[sheet.SheetName];
+
+                for (var i = 0; i <= max_idx; ++i)
+                {
+                    list.Add(new string2int(i.ToString(), i));
+                }
+            };
+            var list1 = new List<string2int>();
+            var list2 = new List<string2int>();
+
+            search(books["src"], sheet1, list1);
+            search(books["dst"], sheet2, list2);
+
+            var option = new DiffOption<string2int>();
+            option.EqualityComparer = new SheetIDComparer();
+            var result = DiffUtil.Diff(list1, list2, option);
+            //var optimize = result.ToList();// 
+            // id列不应该把delete/add优化成modify
+            // var optimize = DiffUtil.OptimizeCaseDeletedFirst(result);
+            return result.ToList();
+        }
+        private SheetDiffStatus DiffCommonSheet(ISheet src, ISheet dst, SheetDiffStatus status)
+        {
+            status = status ?? new SheetDiffStatus() { sortKey = config.DefaultKeyID };
+
+            bool changed = false;
+
+            var srcwrap = books["src"];
+            var dstwrap = books["dst"];
+
+            var head1 = GetCommonHeaderStrList(srcwrap, src);
+            var head2 = GetCommonHeaderStrList(dstwrap, dst);
+
+            var diff = NetDiff.DiffUtil.Diff(head1, head2);
+            //var optimized = diff.ToList();// NetDiff.DiffUtil.OptimizeCaseDeletedFirst(diff);
+            var optimized = DiffUtil.OptimizeCaseDeletedFirst(diff);
+
+            changed = changed || optimized.Any(a => a.Status != DiffStatus.Equal);
+
+            var diffhead = optimized.ToList();
+            status.diffHead = new SheetRowDiff() { diffcells = diffhead };
+
+            status.column2diff1[0] = getColumn2Diff(diffhead, true);
+            status.column2diff2[0] = getColumn2Diff(diffhead, false);
+
+            srcwrap.SheetValideColumn[src.SheetName] = head1.Count;
+            dstwrap.SheetValideColumn[dst.SheetName] = head2.Count;
+
+            status.diffFistColumn = GetCommonIDDiffList(src, dst);
+
+            changed = changed || status.diffFistColumn.Any(a => a.Status != DiffStatus.Equal);
+
+            foreach (var diffkv in status.diffFistColumn)
+            {
+                var rowid1 = diffkv.Obj1.Value;
+                var rowid2 = diffkv.Obj2.Value;
+                if (diffkv.Obj1.Key == null)
+                {
+                    // 创建新行，方便比较
+                    rowid1 = -1;
+                }
+                if (diffkv.Obj2.Key == null)
+                {
+                    rowid2 = -1;
+                }
+                int maxLineCount = 0;
+                var diffrow = DiffCommonSheetRow(src, rowid1, dst, rowid2, status, out maxLineCount);
+
                 status.column2diff1[rowid1] = getColumn2Diff(diffrow, true);
                 status.column2diff2[rowid2] = getColumn2Diff(diffrow, false);
 
@@ -250,15 +431,16 @@ namespace ExcelMerge {
                     }
                 }
                 status.diffSheet.Add(rowdiff);
-                
+
                 changed = changed || rowdiff.changed;
             }
 
             status.changed = changed;
+            status.isConfigDiff = false;
 
             return status;
         }
-        
+
         public void Refresh() {
             var file1 = Entrance.SrcFile;
             var file2 = Entrance.DstFile;
@@ -296,6 +478,7 @@ namespace ExcelMerge {
                     sheetsDiff[name] = DiffSheet(src.book.GetSheetAt(sheet1), dst.book.GetSheetAt(sheet2));
 
                     if (sheetsDiff[name] != null) {
+                        // 找第一个不相同的sheet
                         oldsheetName = sheetname.Obj1.Name;
                         var sheetidx = 0;
                         if (!string.IsNullOrEmpty(oldsheetName)) {
@@ -314,9 +497,6 @@ namespace ExcelMerge {
                             dstSheetID = sheetidx;
                         }
                     }
-                } else
-                {
-                    // 新增sheet，直接完整显示
                 }
             }
 
@@ -492,43 +672,29 @@ namespace ExcelMerge {
             var startpoint = wrap.SheetStartPoint[sheet.SheetName];
             var startrow = startpoint.Item1;
             var startcol = startpoint.Item2;
-            if (ProcessHeader.IsChecked == true) {
-                var list = new List<IRow>();
-                for (int i = startrow; i < DiffStartIdx(startrow); ++i) {
-                    var row = sheet.GetRow(i);
-                    if (row == null) continue;
-                    list.Add(row);
+            var list = new List<IRow>();
+            for (int i = startrow; i < DiffStartIdx(startrow); ++i) {
+                var row = sheet.GetRow(i);
+                if (row == null) continue;
+                list.Add(row);
+            }
+            
+            if (list.Count == 0)
+            {
+                return null;
+            }
+            for (int i = startcol; i < list[0].Cells.Count; ++i) {
+                var str = "";
+                for (int j = 0; j < list.Count; ++j) {
+                    var cell_s = Util.GetCellValue(list[j].GetCell(i));
+               
+                    str = str + (j > 0 ? ":" + cell_s : cell_s);
                 }
-                
-                if (list.Count == 0)
+                if (string.IsNullOrWhiteSpace(str))
                 {
-                    return null;
+                    return header;
                 }
-                for (int i = startcol; i < list[0].Cells.Count; ++i) {
-                    var str = "";
-                    for (int j = 0; j < list.Count; ++j) {
-                        var cell_s = Util.GetCellValue(list[j].GetCell(i));
-                   
-                        str = str + (j > 0 ? ":" + cell_s : cell_s);
-                    }
-                    if (string.IsNullOrWhiteSpace(str))
-                    {
-                        return header;
-                    }
-                    header.Add(str);
-                }
-            } else {
-                var row0 = sheet.GetRow(startrow);
-                if (row0 == null ) return null;
-
-                for (int i = startcol; i < row0.Cells.Count; ++i) {
-                    var s1 = Util.GetCellValue(row0.GetCell(i));
-                    // 起码有两列
-                    if (string.IsNullOrWhiteSpace(s1) && i > 1) {
-                        return header;
-                    }
-                    header.Add((i+1).ToString());
-                }
+                header.Add(str);
             }
             return header;
         }
@@ -677,6 +843,70 @@ namespace ExcelMerge {
             optimized = DiffUtil.OptimizeShift(optimized, true);
 
             return optimized.ToList();
+        }
+
+        List<DiffResult<string>> DiffCommonSheetRow(ISheet sheet1, int row1, ISheet sheet2, int row2, SheetDiffStatus status, out int maxLineCount)
+        {
+            var list1 = new List<string>();
+            var list2 = new List<string>();
+
+            int maxlinecount = 0;
+            var sheetname = sheet1.SheetName;
+            Action<WorkBookWrap, ISheet, int, List<string>> AddList = (WorkBookWrap book, ISheet sheet, int rowid, List<string> ret) =>
+            {
+                var row = sheet.GetRow(rowid);
+                var columnCount = book.SheetValideColumn[sheetname];
+                var columnstart = book.SheetStartPoint[sheetname].Item2;
+
+                var rowCount = book.SheetValideRow[sheetname];
+                var rowstart = book.SheetStartPoint[sheetname].Item1;
+
+                if (rowid >= rowstart && rowid <= rowCount)
+                {
+                    for (int i = 0; i < columnCount; ++i)
+                    {
+                        var value = row != null ? Util.GetCellValue(row.GetCell(i + columnstart)) : "";
+                        maxlinecount = Math.Max(maxlinecount, value.Count((c) => { return c == '\n'; }) + 1);
+
+                        ret.Add(value);
+                    }
+                }
+            };
+            AddList(books["src"], sheet1, row1, list1);
+            AddList(books["dst"], sheet2, row2, list2);
+
+            maxLineCount = maxlinecount;
+
+            var diff = new List<DiffResult<string>>();
+            for (int i = 0; i < Math.Max(list1.Count, list2.Count); ++i)
+            {
+   
+                string v1 = i < list1.Count ? list1[i] : null;
+                string v2 = i < list2.Count ? list2[i] : null;
+                var op = DiffStatus.Equal;
+
+                
+                if (v1 == null)
+                {
+                    op = DiffStatus.Inserted;
+                } else if (v2 == null)
+                {
+                    op = DiffStatus.Deleted;
+                } else
+                {
+                    if (v1 == v2)
+                    {
+                        op = DiffStatus.Equal;
+                    }
+                    else
+                    {
+                        op = DiffStatus.Modified;
+                    }
+                }
+                diff.Add(new DiffResult<string>(v1, v2, op));
+            }
+
+            return diff;
         }
 
         void OnSheetChanged() {

@@ -186,7 +186,7 @@ namespace ExcelMerge {
 
                 var headerStr = new string[columnCount];
 
-                var needChangeHead = MainWindow.instance.ProcessHeader.IsChecked == true;
+                var needChangeHead = status.isConfigDiff;
                 if (needChangeHead) {
                     var headershow = sheet.GetRow(MainWindow.instance.config.ShowLineID-1 + startrow);
                     var headerkey = sheet.GetRow(MainWindow.instance.config.KeyLineID-1 +startrow);
@@ -230,7 +230,7 @@ namespace ExcelMerge {
                         var str = (i + 1).ToString();
 
                         var tc = new DataGridTemplateColumn();
-                        tc.Header = str;
+                        tc.Header = Util.NumberToExcelColumnId(i+1);
                         tc.CellTemplateSelector = new CellTemplateSelector(str, i, tag);
                         tc.CellEditingTemplateSelector = new CellTemplateSelector(str, i, tag);
 

@@ -135,51 +135,53 @@ namespace NetDiff
                     while (j < list.Count && list[j].Status == currentStatus) {
                         j++;
                     }
+                    // equal or modify
                     while (j + optCount < list.Count && list[j + optCount].Status != nextStatus) {
                         optCount++;
                     }
-                }
-                
-                if ( j+optCount < list.Count && list[i].Status == currentStatus) { 
-                    // 只处理删1增1的情况
-                    while (i < j-1) {
-                        ret_list.Add(list[i]);
-                        i++;
-                    }
 
-                    int oldi = i;
-                    int diffcount = 0;
-                    var test_list = new List<DiffResult<T>>();
-                    while (i < j + optCount) {
-                        var obj1 = deleteFirst ? list[i].Obj1 : list[i + 1].Obj1;
-                        var obj2 = deleteFirst ? list[i + 1].Obj2 : list[i].Obj2;
-                        if (obj1 == null) {
-                            obj1 = (T)(object)string.Empty;
+                    if (j + optCount < list.Count) {
+                        // 只处理删1增1的情况
+                        while (i < j - 1) {
+                            ret_list.Add(list[i]);
+                            i++;
                         }
-                        if (obj2 == null) {
-                            obj2 = (T)(object)string.Empty;
-                        }
-                        var status = obj2.Equals(obj1) ? DiffStatus.Equal : DiffStatus.Modified;
-                        if (status == DiffStatus.Modified) {
-                            diffcount++;
-                            // 超过一个修改，认为不应该优化，回退修改
-                            if (diffcount > 1) {
-                                break;
+
+                        int oldi = i;
+                        int diffcount = 0;
+                        var test_list = new List<DiffResult<T>>();
+                        while (i < j + optCount) {
+                            var obj1 = deleteFirst ? list[i].Obj1 : list[i + 1].Obj1;
+                            var obj2 = deleteFirst ? list[i + 1].Obj2 : list[i].Obj2;
+                            if (obj1 == null) {
+                                obj1 = (T)(object)string.Empty;
                             }
-                        }
-                        
-                        test_list.Add(new DiffResult<T>(obj1, obj2, status));
-                        i++;
-                    }
-                    if (diffcount <= 1) {
-                        ret_list.AddRange(test_list);
-                        //跳过最后一个优化掉的insert
-                        i += 1;
-                    } else {
-                        i = oldi;
-                    }
+                            if (obj2 == null) {
+                                obj2 = (T)(object)string.Empty;
+                            }
+                            var status = obj2.Equals(obj1) ? DiffStatus.Equal : DiffStatus.Modified;
+                            if (status == DiffStatus.Modified) {
+                                diffcount++;
+                                // 超过一个修改，认为不应该优化，回退修改
+                                if (diffcount > 1) {
+                                    break;
+                                }
+                            }
 
+                            test_list.Add(new DiffResult<T>(obj1, obj2, status));
+                            i++;
+                        }
+                        if (diffcount <= 1) {
+                            ret_list.AddRange(test_list);
+                            //跳过最后一个优化掉的insert
+                            i += 1;
+                        } else {
+                            i = oldi;
+                        }
+
+                    }
                 }
+
                 while (i < j) {
                     ret_list.Add(list[i]);
                     i++;
