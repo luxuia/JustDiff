@@ -92,20 +92,22 @@ namespace ExcelMerge {
 
         public static IWorkbook GetWorkBook(string file) {
             IWorkbook book = null;
+            /*
             try
             {
                 using (var s = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
-                    book = WorkbookFactory.Create(s);
+                    book = WorkbookFactory.Create(s, true);
                 }
             }
             finally
+            */
             {
                 if (book == null)
                 {
                     using (var s = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        book = WorkbookFactory.Create(s);
+                        book = WorkbookFactory.Create(s, true);
                     }
                 }
             }

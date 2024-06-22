@@ -75,7 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="NPOI" Version="2.5.6" />
+    <PackageReference Include="NPOI" Version="2.7.0" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
     <PackageReference Include="SharpSvn.1.9-x86" Version="1.9007.3987.251" />
     <PackageReference Include="SharpZipLib" Version="1.4.1" />
