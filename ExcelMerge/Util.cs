@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -195,9 +195,11 @@ namespace ExcelMerge {
         public int DefaultKeyID = 0;
 
         public int EmptyLine = 0;
+
+        public string SvnBaseUrl = "http://m1.svn.ejoy.com/m1/";
     }
 
-    public class WorkBookWrap {
+    public class WorkBookWrap : IDisposable {
         public IWorkbook book;
 
         private int _sheet;
@@ -255,6 +257,11 @@ namespace ExcelMerge {
             CalValideIds(cfg);
         }
 
+        public void Dispose()
+        {
+            (book as IDisposable)?.Dispose();
+        }
+
         void CalValideRow(Config cfg)
         {
 
@@ -283,12 +290,13 @@ namespace ExcelMerge {
                 }
                 SheetStartPoint[sheet.SheetName] = new Tuple<int, int>(startrow, startcol);
 
+                int emptyLine = cfg.EmptyLine;
                 for (int i = startrow; ; i++)
                 {
                     var row = sheet.GetRow(i);
                     if (row == null || !Util.CheckValideRow(row))
                     {
-                        if (cfg.EmptyLine-- > 0)
+                        if (emptyLine-- > 0)
                         {
                             continue;
                         }

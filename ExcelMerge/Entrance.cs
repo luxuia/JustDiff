@@ -1,4 +1,3 @@
-﻿using NPOI.Util;
 using SharpSvn;
 using System;
 using System.Collections.Generic;
@@ -34,10 +33,10 @@ namespace ExcelMerge
 
         public static string GetVersionFile(SvnClient client, Uri uri, long revision)
         {
-            var tempDir = System.IO.Path.GetTempPath();
-            var filename = System.IO.Path.GetFileName(uri.LocalPath);
+            var tempDir = Path.GetTempPath();
+            var filename = Path.GetFileName(uri.LocalPath);
 
-            var file = tempDir + revision + "_" + filename;
+            var file = Path.Combine(tempDir, "ExcelMerge_" + revision + "_" + filename);
             var checkoutArgs = new SvnWriteArgs() { Revision = revision };
             using (var fs = System.IO.File.Create(file))
             {
@@ -82,7 +81,15 @@ namespace ExcelMerge
                         }
                     }
 
-                    Diff(SrcFile, DstFile);
+                    try
+                    {
+                        Diff(SrcFile, DstFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"OnDragFile Diff 异常: {ex}");
+                        MessageBox.Show($"无法对比文件: {ex.Message}", "ExcelMerge", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
             }
         }
@@ -165,13 +172,32 @@ namespace ExcelMerge
 
             SrcFile = file;
 
-            DiffUri(versions[0] - 1, versions[versions.Count - 1], new Uri("http://m1.svn.ejoy.com/m1/" + file));
+            var config = LoadConfig();
+            var baseUrl = config?.SvnBaseUrl ?? "http://m1.svn.ejoy.com/m1/";
+            if (!baseUrl.EndsWith("/")) baseUrl += "/";
+
+            DiffUri(versions[0] - 1, versions[versions.Count - 1], new Uri(baseUrl + file));
         }
 
-        static void getUrl(string path, out string url, out long rev)
+        static Config LoadConfig()
+        {
+            try
+            {
+                var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+                if (File.Exists(path))
+                {
+                    return Newtonsoft.Json.JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        static bool TryParseRevisionFromUrl(string path, out string url, out long rev)
         {
             rev = 0;
-            url = string.Empty;
+            url = path ?? string.Empty;
+            if (string.IsNullOrEmpty(path)) return false;
             var revisionidx = path.LastIndexOf("?revision=");
             revisionidx = revisionidx >= 0 ? revisionidx + "?revision=".Length : -1;
             if (revisionidx < 0)
@@ -179,69 +205,82 @@ namespace ExcelMerge
                 revisionidx = path.LastIndexOf("?r=");
                 revisionidx = revisionidx >= 0 ? revisionidx + "?r=".Length : -1;
             }
-            //xlsmerge://http://m2.svn.ejoy.com/M2/x19/editor/config/resource/C场景传送.xlsx/?r=614129
             if (revisionidx > 0)
             {
                 var srev = path.Substring(revisionidx);
-                rev = long.Parse(srev);
+                var endIdx = srev.IndexOf('&');
+                var revStr = endIdx >= 0 ? srev.Substring(0, endIdx) : srev;
+                return long.TryParse(revStr, out rev);
             }
-            url = path;
+            return true;
         }
         public static void ProcessInput(object sender, StartupEventArgs e)
         {
-            //File.WriteAllLines(@"F:\x19_trunk_edit\pc_daily\package\x19_pc\test", e.Args);
-            if (e.Args.Length > 1)
+            try
             {
-                if (e.Args[0] == "-difflist")
+                if (e.Args.Length > 1)
                 {
-                    string[] input = new string[e.Args.Length - 1];
-                    Array.Copy(e.Args, 1, input, 0, e.Args.Length - 1);
-                    DiffList(input);
-                }
-                else
-                {
-                    Diff(e.Args[0], e.Args[1]);
-                }
-            }
-            else if (e.Args.Length == 1)
-            {
-                var url = e.Args[0];
-                if (url.StartsWith(Scheme))
-                {
-                    url = url.Substring(Scheme.Length);
-                    int cmpidx = url.LastIndexOf("&cmp=");
-                    if (cmpidx > 0)
+                    if (e.Args[0] == "-difflist")
                     {
-                        //xlsmerge://http://m2.svn.ejoy.com/M2/branch/cn/cn_20220721/editor/config/resource/G公会战.xlsx/?r=616108&cmp=http://m2.svn.ejoy.com/M2/x19/editor/config/resource/G公会战.xlsx/?r=611111
-
-
-                        string path1 = url.Substring(0, cmpidx);
-
-                        string fileurl = string.Empty;
-                        long rev = 0;
-                        getUrl(path1, out fileurl, out rev);
-
-                        string path2 = url.Substring(cmpidx + "&cmp=".Length);
-                        string cmpfileurl = string.Empty;
-                        long cmprev = 0;
-                        getUrl(path2, out cmpfileurl, out cmprev);
-
-                        DiffUri(rev, new Uri(url), cmprev, new Uri(cmpfileurl));
+                        string[] input = new string[e.Args.Length - 1];
+                        Array.Copy(e.Args, 1, input, 0, e.Args.Length - 1);
+                        DiffList(input);
                     }
                     else
                     {
-                        //xlsmerge://http://m2.svn.ejoy.com/M2/x19/editor/config/resource/C场景传送.xlsx/?r=614129
-                        string fileurl = string.Empty;
-                        long rev = 0;
-                        getUrl(url, out fileurl, out rev);
-                        if (!string.IsNullOrEmpty(fileurl))
-                        {
-                            DiffUri(rev - 1, rev, new Uri(url));
-                        }
+                        Diff(e.Args[0], e.Args[1]);
                     }
                 }
-            } else
+                else if (e.Args.Length == 1)
+                {
+                    var url = e.Args[0];
+                    if (url.StartsWith(Scheme))
+                    {
+                        url = url.Substring(Scheme.Length);
+                        int cmpidx = url.LastIndexOf("&cmp=");
+                        if (cmpidx > 0)
+                        {
+                        string path1 = url.Substring(0, cmpidx);
+                        string fileurl = string.Empty;
+                        long rev = 0;
+                        string path2 = url.Substring(cmpidx + "&cmp=".Length);
+                        string cmpfileurl = string.Empty;
+                        long cmprev = 0;
+
+                        if (TryParseRevisionFromUrl(path1, out fileurl, out rev) &&
+                            TryParseRevisionFromUrl(path2, out cmpfileurl, out cmprev))
+                        {
+                            DiffUri(rev, new Uri(fileurl), cmprev, new Uri(cmpfileurl));
+                        }
+                        else
+                        {
+                            MessageBox.Show("无法解析版本号", "xlsmerge", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                        }
+                    else
+                    {
+                        string fileurl = string.Empty;
+                        long rev = 0;
+                        if (TryParseRevisionFromUrl(url, out fileurl, out rev) && !string.IsNullOrEmpty(fileurl))
+                        {
+                            DiffUri(rev - 1, rev, new Uri(fileurl));
+                        }
+                        else
+                        {
+                            MessageBox.Show("无法解析版本号", "xlsmerge", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                    }
+                    }
+                }
+                else
+                {
+                    Diff("", "");
+                }
+            }
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"ProcessInput 异常: {ex}");
+                MessageBox.Show($"无法打开或对比文件: {ex.Message}", "ExcelMerge", MessageBoxButton.OK, MessageBoxImage.Error);
                 Diff("", "");
             }
         }

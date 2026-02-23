@@ -81,8 +81,8 @@ namespace ExcelMerge {
                 dir = string.Format("\"{0}ExcelMerge.exe\" \"%1\"", dir);
                 key.SetValue(null, dir);
                 key.Close();
-            } catch {
-
+            } catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine($"xlsmerge 协议注册失败: {ex.Message}");
             } finally {
                 var key = Registry.ClassesRoot.OpenSubKey(@"xlsmerge\shell\open\command");
                 if (key != null) {
@@ -447,14 +447,29 @@ namespace ExcelMerge {
 
             if (string.IsNullOrEmpty(file1) || string.IsNullOrEmpty(file2)) return;
 
+            var oldSrc = books.ContainsKey("src") ? books["src"] : null;
+            var oldDst = books.ContainsKey("dst") ? books["dst"] : null;
 
             string oldsheetName = null;
-            if (books.ContainsKey("src")) {
-                oldsheetName = books["src"].sheetname;
+            if (oldSrc != null) {
+                oldsheetName = oldSrc.sheetname;
             }
 
-            var src = new WorkBookWrap(file1, config);
-            var dst = new WorkBookWrap(file2, config);
+            WorkBookWrap src, dst;
+            try
+            {
+                src = new WorkBookWrap(file1, config);
+                dst = new WorkBookWrap(file2, config);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Refresh 加载工作簿异常: {ex}");
+                MessageBox.Show($"无法打开文件: {ex.Message}", "ExcelMerge", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            oldSrc?.Dispose();
+            oldDst?.Dispose();
 
             var option = new DiffOption<SheetNameCombo>();
             option.EqualityComparer = new SheetNameComboComparer();
@@ -563,6 +578,11 @@ namespace ExcelMerge {
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            foreach (var kv in books)
+            {
+                kv.Value?.Dispose();
+            }
+            books.Clear();
             Entrance.Window_Closing(this, e);
         }
 
