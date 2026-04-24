@@ -88,7 +88,4 @@
     <Compile Remove="NetDiff\obj\Release\.NETFramework,Version=v4.5.2.AssemblyAttributes.cs" />
     <Compile Remove="NetDiff\Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\UnityYamlParser\UnityYamlParser.csproj" />
-  </ItemGroup>
 </Project>

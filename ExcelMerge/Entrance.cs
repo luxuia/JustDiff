@@ -18,7 +18,7 @@ namespace ExcelMerge
         public static string DstFile;
 
         public static MainWindow XLSDiffWindow = null;
-        public static YAMLDifferWindow YAMLWindow = null;
+        //public static YAMLDifferWindow YAMLWindow = null;
 
         public static void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
@@ -102,12 +102,12 @@ namespace ExcelMerge
             var ext = Path.GetExtension(file1);
             if (ext == ".prefab" || ext == ".scene")
             {
-                if (YAMLWindow == null)
-                {
-                    YAMLWindow = new YAMLDifferWindow();
-                    YAMLWindow.Show();
-                }
-                YAMLWindow.Refresh();
+               // if (YAMLWindow == null)
+               // {
+               //     YAMLWindow = new YAMLDifferWindow();
+               //     YAMLWindow.Show();
+               // }
+               // YAMLWindow.Refresh();
 
 
             } else //if (ext == ".xls" || ext == ".xlsx")

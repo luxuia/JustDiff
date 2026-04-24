@@ -13,7 +13,6 @@ using NetDiff;
 using System.Dynamic;
 using System.IO;
 using System.Windows.Documents;
-using UnityYamlParser;
 
 namespace ExcelMerge {
     class Util {
@@ -59,7 +58,7 @@ namespace ExcelMerge {
                         str = cell.NumericCellValue.ToString();
                     }
                     else if (cell.CachedFormulaResultType == CellType.String) {
-                        str = cell.StringCellValue.ToString();
+                        str = cell.StringCellValue.ToString().TrimEnd('\n', ' ');
                     }
                     else {
                         str = "(公式)";
@@ -70,7 +69,7 @@ namespace ExcelMerge {
                     str = cell.NumericCellValue.ToString();
                     break;
                 case CellType.String:
-                    str = cell.RichStringCellValue.ToString();
+                    str = cell.StringCellValue.ToString();
                     break;
             }
             return str;
@@ -516,12 +515,6 @@ namespace ExcelMerge {
         }
     }
 
-    public class YamlDiffNode
-    {
-        public List<DiffResult<GameObject>> diff;
-
-        public List<YamlDiffNode> childs = new List<YamlDiffNode>();
-    }
 
 
 }
