@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using string2int = System.Collections.Generic.KeyValuePair<string, int>;
-using NPOI.SS.UserModel;
 using System.Windows.Controls;
 using System.Collections.ObjectModel;
 using NetDiff;
@@ -38,43 +37,13 @@ namespace ExcelMerge {
             return path.EndsWith(".xls") || path.EndsWith(".xlsx");
         }
 
-        
-        public static string GetCellValue(ICell cell) {
-            var str = string.Empty;
-            if (cell == null) return str;
 
-            switch (cell.CellType) {
-                case CellType.Blank:
-                    str = cell.StringCellValue;
-                    break;
-                case CellType.Boolean:
-                    str = cell.BooleanCellValue.ToString();
-                    break;
-                case CellType.Error:
-                    str = cell.ErrorCellValue.ToString();
-                    break;
-                case CellType.Formula:
-                    if (cell.CachedFormulaResultType == CellType.Numeric) {
-                        str = cell.NumericCellValue.ToString();
-                    }
-                    else if (cell.CachedFormulaResultType == CellType.String) {
-                        str = cell.StringCellValue.ToString().TrimEnd('\n', ' ');
-                    }
-                    else {
-                        str = "(公式)";
-                        //str = cell.CellFormula;
-                    }
-                    break;
-                case CellType.Numeric:
-                    str = cell.NumericCellValue.ToString();
-                    break;
-                case CellType.String:
-                    str = cell.StringCellValue.ToString();
-                    break;
-            }
-            return str;
-            //return '[' + str + ']';
-            //return str.Replace('(', '-').Replace(')', '-').Replace("/", "-");
+        /// <summary>
+        /// 读取单元格的字符串值。所有实际转换已在加载阶段完成并缓存到 <see cref="ICell.DisplayValue"/>，
+        /// 因此这里只是字段访问，零开销。
+        /// </summary>
+        public static string GetCellValue(ICell cell) {
+            return cell == null ? string.Empty : cell.DisplayValue;
         }
 
         public static SolidColorBrush GetColorByDiffStatus(DiffStatus status) {
@@ -89,82 +58,22 @@ namespace ExcelMerge {
             return null;
         }
 
+        /// <summary>
+        /// 通过 MiniExcel 只读加载整个工作簿。数据一次性读入内存，文件句柄立即释放。
+        /// </summary>
         public static IWorkbook GetWorkBook(string file) {
-            IWorkbook book = null;
-            /*
-            try
-            {
-                using (var s = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                {
-                    book = WorkbookFactory.Create(s, true);
-                }
-            }
-            finally
-            */
-            {
-                if (book == null)
-                {
-                    using (var s = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    {
-                        book = WorkbookFactory.Create(s, true);
-                    }
-                }
-            }
-            return book;
+            return MiniExcelWorkbook.Load(file);
         }
 
         public static bool CheckValideRow(IRow row) {
-            var str = string.Empty;
-            for (int i = 0; i < 5; i++) {
-                str += GetCellValue(row.GetCell(i));
+            if (row == null) return false;
+            var cells = row.Cells;
+            int checkCount = Math.Min(5, cells.Count);
+            for (int i = 0; i < checkCount; i++) {
+                var v = cells[i]?.DisplayValue;
+                if (!string.IsNullOrWhiteSpace(v)) return true;
             }
-            return !string.IsNullOrWhiteSpace(str);
-        }
-
-        public static bool CopyCell(ICell oldCell, ICell newCell) {
-            if (oldCell == null || newCell == null) return false;
-            if (oldCell.CellStyle != null) {
-                // apply style from old cell to new cell 
-                // 不是一个xls，没法直接拷贝cellstyle
-                //newCell.CellStyle = oldCell.CellStyle;
-            }
-
-            // If there is a cell comment, copy
-            if (oldCell.CellComment != null) {
-                newCell.CellComment = oldCell.CellComment;
-            }
-
-            // If there is a cell hyperlink, copy
-            if (oldCell.Hyperlink != null) {
-                newCell.Hyperlink = oldCell.Hyperlink;
-            }
-
-            // Set the cell data type
-            newCell.SetCellType(oldCell.CellType);
-
-            // Set the cell data value
-            switch (oldCell.CellType) {
-                case CellType.Blank:
-                    newCell.SetCellValue(oldCell.StringCellValue);
-                    break;
-                case CellType.Boolean:
-                    newCell.SetCellValue(oldCell.BooleanCellValue);
-                    break;
-                case CellType.Error:
-                    newCell.SetCellErrorValue(oldCell.ErrorCellValue);
-                    break;
-                case CellType.Formula:
-                    //newCell.SetCellFormula(oldCell.CellFormula);
-                    //break;
-                case CellType.Numeric:
-                    newCell.SetCellValue(oldCell.NumericCellValue);
-                    break;
-                case CellType.String:
-                    newCell.SetCellValue(oldCell.RichStringCellValue);
-                    break;
-            }
-
-            return true;
+            return false;
         }
 
         public static string NumberToExcelColumnId(int number)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,8 +12,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.IO;
-using NPOI.SS.UserModel;
-using NPOI.SS.Util;
 using SharpSvn;
 using SharpSvn.UI;
 using System.Collections.ObjectModel;

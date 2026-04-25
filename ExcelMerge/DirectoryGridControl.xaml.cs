@@ -8,7 +8,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using NPOI.SS.UserModel;
 using NetDiff;
 using System.IO;
 

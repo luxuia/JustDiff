@@ -10,6 +10,7 @@ using NetDiff;
 using System.IO;
 using System.Windows.Input;
 using System.Net;
+// NPOI 已替换为基于 MiniExcel 的自定义只读抽象（参见 ExcelModel.cs）。
 
 namespace ExcelMerge {
     /// <summary>

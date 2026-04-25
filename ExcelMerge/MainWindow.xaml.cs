@@ -12,8 +12,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using NPOI.SS.UserModel;
-using NPOI.SS.Util;
 using SharpSvn;
 using System.Collections.ObjectModel;
 using NetDiff;
@@ -21,7 +19,6 @@ using string2int = System.Collections.Generic.KeyValuePair<string, int>;
 using System.IO;
 using Newtonsoft.Json;
 using Microsoft.Win32;
-using NPOI.Util;
 
 namespace ExcelMerge {
 
@@ -293,33 +290,36 @@ namespace ExcelMerge {
         {
             List<string> header = new List<string>();
 
-            if (sheet != null)
+            if (sheet == null) return header;
+
+            // 基于我们自建的只读接口遍历。MiniExcelWorkbook 在加载阶段已把
+            // 每个 sheet 的所有行补齐到相同列宽，因此这里直接用第一行的 Cells.Count
+            // 就能拿到最大列数；行数等于 sheet.RowCount。
+            int rowCount = sheet.RowCount;
+            if (rowCount <= 0) return header;
+
+            int minRow = 0;
+            int maxRow = rowCount - 1;
+            int maxCol = 0;
+            for (int r = 0; r < rowCount; r++)
             {
-                var it = sheet.GetRowEnumerator();
-                var min_col = 10000000;
-                var max_col = -1;
-                var min_row = 10000000;
-                var max_row = -1;
-                while (it.MoveNext())
+                var row = sheet.GetRow(r);
+                if (row == null) continue;
+                int c = row.Cells.Count;
+                if (c > maxCol) maxCol = c;
+            }
+            // 与原 NPOI 实现保持兼容：max_col 是"最后一个单元格的索引"，对应 LastCellNum（NPOI 是 1 基 / count 语义差异），
+            // 这里用列总数 - 1 作为上界。
+            int maxColIdx = maxCol - 1;
+
+            if (maxColIdx >= 0)
+            {
+                wrap.SheetValideRow[sheet.SheetName] = maxRow;
+                wrap.SheetStartPoint[sheet.SheetName] = new Tuple<int, int>(minRow, 0);
+
+                for (var i = 0; i <= maxColIdx; i++)
                 {
-                    if (it.Current is IRow row){
-                        min_col = Math.Min(row.FirstCellNum, min_col);
-                        max_col = Math.Max(row.LastCellNum, max_col);
-
-                        min_row = Math.Min(row.RowNum, min_row);
-                        max_row = Math.Max(row.RowNum, max_row);
-                    }
-                }
-
-                if (max_col > 0 )
-                {
-                    wrap.SheetValideRow[sheet.SheetName] = max_row;
-                    wrap.SheetStartPoint[sheet.SheetName] = new Tuple<int, int>(min_row, 0);
-
-                    for (var i = 0; i <= max_col; i++)
-                    {
-                        header.Add((i+1).ToString());
-                    }
+                    header.Add((i + 1).ToString());
                 }
             }
             return header;
