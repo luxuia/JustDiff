@@ -180,8 +180,10 @@ namespace ExcelMerge
 
         public static MiniExcelWorkbook Load(string file)
         {
-            // FileShare.Read 允许其它进程继续只读访问，保持与原 NPOI 实现一致的打开语义。
-            using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+            // 使用 ReadWrite | Delete 共享模式，允许打开正在被 Excel/WPS 占用的文件。
+            // 我们只读不写，对对方没有影响；FileShare.Delete 兼容对方在保存时替换文件的场景。
+            using var fs = new FileStream(file, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete);
 
             var sheetNames = MiniExcel.GetSheetNames(fs);
             var sheets = new ISheet[sheetNames.Count];

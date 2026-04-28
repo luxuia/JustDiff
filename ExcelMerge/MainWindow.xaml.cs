@@ -854,6 +854,32 @@ namespace ExcelMerge {
                     list2.Add(value);
                 }
             }
+
+            // 快速路径：两行长度一致且逐项相等时，直接构造全 Equal 结果，
+            // 避免昂贵的 LCS(EditGraph) + 多轮 Optimize。
+            // Excel 行对比的典型场景是两边列数相同、大部分单元格未修改，命中率很高。
+            if (list1.Count == list2.Count)
+            {
+                bool allEqual = true;
+                for (int i = 0; i < list1.Count; ++i)
+                {
+                    if (!string.Equals(list1[i], list2[i]))
+                    {
+                        allEqual = false;
+                        break;
+                    }
+                }
+                if (allEqual)
+                {
+                    var equalResult = new List<DiffResult<string>>(list1.Count);
+                    for (int i = 0; i < list1.Count; ++i)
+                    {
+                        equalResult.Add(new DiffResult<string>(list1[i], list2[i], DiffStatus.Equal));
+                    }
+                    return equalResult;
+                }
+            }
+
             var diff = DiffUtil.Diff(list1, list2);
             //var optimized = diff.ToList();// DiffUtil.OptimizeCaseDeletedFirst(diff);
             var optimized = DiffUtil.OptimizeCaseDeletedFirst(diff);
@@ -863,6 +889,40 @@ namespace ExcelMerge {
             optimized = DiffUtil.OptimizeShift(optimized, true);
 
             return optimized.ToList();
+        }
+
+        // 先比较聚合哈希，再做一次线性等值校验（防止哈希碰撞）。
+        // 长度不一致直接返回 false，复杂度 O(N)。
+        private static bool AreRowsEqual(List<string> list1, List<string> list2)
+        {
+            if (list1.Count != list2.Count)
+            {
+                return false;
+            }
+
+            int hash1 = 17;
+            int hash2 = 17;
+            for (int i = 0; i < list1.Count; ++i)
+            {
+                var v1 = list1[i];
+                var v2 = list2[i];
+                hash1 = unchecked(hash1 * 31 + (v1 != null ? v1.GetHashCode() : 0));
+                hash2 = unchecked(hash2 * 31 + (v2 != null ? v2.GetHashCode() : 0));
+            }
+
+            if (hash1 != hash2)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < list1.Count; ++i)
+            {
+                if (!string.Equals(list1[i], list2[i]))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         List<DiffResult<string>> DiffCommonSheetRow(ISheet sheet1, int row1, ISheet sheet2, int row2, SheetDiffStatus status, out int maxLineCount)
