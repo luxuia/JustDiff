@@ -211,17 +211,40 @@ namespace ExcelMerge
                     rowsRaw.Add(cells);
                 }
 
+                // Trim trailing empty columns to normalize column counts between files.
+                // MiniExcel may report different rawRow.Count for identical data depending on internal XML.
+                int effectiveCols = maxCols;
+                for (int c = maxCols - 1; c >= 0; c--)
+                {
+                    bool hasData = false;
+                    for (int ri = 0; ri < rowsRaw.Count; ri++)
+                    {
+                        var row = rowsRaw[ri];
+                        if (c < row.Length)
+                        {
+                            var cell = row[c];
+                            if (cell != null && cell.CellType != CellType.Blank && !string.IsNullOrEmpty(cell.DisplayValue))
+                            {
+                                hasData = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasData) break;
+                    effectiveCols = c;
+                }
+                maxCols = effectiveCols;
+
                 var rowArr = new IRow[rowsRaw.Count];
                 for (int ri = 0; ri < rowsRaw.Count; ri++)
                 {
                     var src = rowsRaw[ri];
-                    if (src.Length < maxCols)
+                    if (src.Length != maxCols)
                     {
-                        // 补齐到当前 sheet 最大列宽，避免下游 GetCell 时越界返回 null 造成分支开销。
-                        var padded = new ICell[maxCols];
-                        Array.Copy(src, padded, src.Length);
-                        for (int k = src.Length; k < maxCols; k++) padded[k] = MiniExcelCell.Blank;
-                        rowArr[ri] = new MiniExcelRow(ri, padded);
+                        var adjusted = new ICell[maxCols];
+                        Array.Copy(src, adjusted, Math.Min(src.Length, maxCols));
+                        for (int k = src.Length; k < maxCols; k++) adjusted[k] = MiniExcelCell.Blank;
+                        rowArr[ri] = new MiniExcelRow(ri, adjusted);
                     }
                     else
                     {

@@ -11,6 +11,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="78"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -64,21 +65,24 @@
 
         </Grid>
 
-        <Border Grid.Row="1" Grid.Column="0" Background="LightYellow" />
-        <Border Grid.Row="1" Grid.Column="1" Background="LightGreen"  />
-        <local:ExcelGridControl x:Name="SrcDataGrid" Grid.Column="0" Grid.Row="1" Margin="1,0,1,1"
+        <ProgressBar x:Name="DiffProgressBar" Grid.Row="1" Grid.ColumnSpan="2" Height="4"
+                     Minimum="0" Maximum="100" Visibility="Collapsed" Foreground="#0078D7"/>
+
+        <Border Grid.Row="2" Grid.Column="0" Background="LightYellow" />
+        <Border Grid.Row="2" Grid.Column="1" Background="LightGreen"  />
+        <local:ExcelGridControl x:Name="SrcDataGrid" Grid.Column="0" Grid.Row="2" Margin="1,0,1,1"
             AllowDrop="True"
             Tag="src">
 
         </local:ExcelGridControl>
 
-        <local:ExcelGridControl x:Name="DstDataGrid" Grid.Column="1" Grid.Row="1" Margin="1,0,1,1"
+        <local:ExcelGridControl x:Name="DstDataGrid" Grid.Column="1" Grid.Row="2" Margin="1,0,1,1"
             AllowDrop="True"
             Tag="dst">
 
         </local:ExcelGridControl>
 
-        <GridSplitter Grid.Row="1" Grid.Column="0" Background="Transparent" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5"/>
+        <GridSplitter Grid.Row="2" Grid.Column="0" Background="Transparent" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5"/>
     </Grid>
 </Window>
 

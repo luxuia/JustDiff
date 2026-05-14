@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(dotnet sln *)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet run *)",
+      "Bash(tasklist)",
+      "Bash(taskkill /PID 83420 /F)",
+      "Bash(taskkill /PID 40636 /F)",
+      "Bash(rm -f ExcelMerge/bin/Debug/net6.0-windows/unity_diff_debug.log)",
+      "Bash(cat ExcelMerge/bin/Debug/net6.0-windows/unity_diff_debug.log)",
+      "Bash(taskkill /IM ExcelMerge.exe /F)",
+      "Bash(taskkill /PID 80948 /F)",
+      "Bash(taskkill /IM dotnet.exe /F)",
+      "Bash(taskkill *)",
+      "Bash(cmd *)",
+      "Bash(svn info *)",
+      "Bash(svn log *)",
+      "Bash(grep \"\\\\.prefab$\")",
+      "Bash(awk '{print $2}')",
+      "Bash(grep \"/Prefab/.*\\\\.prefab$\")",
+      "Bash(grep \"^   M.*/Prefab/.*\\\\.prefab$\")",
+      "Bash(reg query *)",
+      "Bash(dotnet *)"
+    ]
+  }
+}

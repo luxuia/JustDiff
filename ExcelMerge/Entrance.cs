@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using SharpSvn;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,7 @@ namespace ExcelMerge
         public static string DstFile;
 
         public static MainWindow XLSDiffWindow = null;
-        //public static YAMLDifferWindow YAMLWindow = null;
+        public static UnityDifferWindow UnityDiffWindow = null;
 
         public static void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
@@ -99,18 +100,17 @@ namespace ExcelMerge
             SrcFile = file1;
             DstFile = file2;
 
-            var ext = Path.GetExtension(file1);
-            if (ext == ".prefab" || ext == ".scene")
+            var ext = Path.GetExtension(file1)?.ToLower();
+            if (ext == ".prefab" || ext == ".scene" || ext == ".unity")
             {
-               // if (YAMLWindow == null)
-               // {
-               //     YAMLWindow = new YAMLDifferWindow();
-               //     YAMLWindow.Show();
-               // }
-               // YAMLWindow.Refresh();
-
-
-            } else //if (ext == ".xls" || ext == ".xlsx")
+                if (UnityDiffWindow == null)
+                {
+                    UnityDiffWindow = new UnityDifferWindow();
+                    UnityDiffWindow.Show();
+                }
+                UnityDiffWindow.Refresh(file1, file2);
+            }
+            else
             {
                 if (XLSDiffWindow == null)
                 {
@@ -214,8 +214,40 @@ namespace ExcelMerge
             }
             return true;
         }
+        static void RegisterTortoiseSvnDiffTools()
+        {
+            try
+            {
+                using var svnKey = Registry.CurrentUser.OpenSubKey(@"Software\TortoiseSVN", false);
+                if (svnKey == null) return;
+
+                var exePath = Environment.ProcessPath;
+                if (string.IsNullOrEmpty(exePath))
+                    exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+                if (string.IsNullOrEmpty(exePath)) return;
+
+                var command = $"\"{exePath}\" %base %mine";
+                string[] extensions = { ".prefab", ".unity", ".scene", ".xlsx" };
+
+                using var diffKey = Registry.CurrentUser.CreateSubKey(@"Software\TortoiseSVN\DiffTools");
+                if (diffKey == null) return;
+                foreach (var ext in extensions)
+                {
+                    var existing = diffKey.GetValue(ext) as string;
+                    if (existing != null && existing.StartsWith($"\"{exePath}\"", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    diffKey.SetValue(ext, command, RegistryValueKind.String);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"RegisterTortoiseSvnDiffTools failed: {ex}");
+            }
+        }
+
         public static void ProcessInput(object sender, StartupEventArgs e)
         {
+            RegisterTortoiseSvnDiffTools();
             try
             {
                 if (e.Args.Length > 1)

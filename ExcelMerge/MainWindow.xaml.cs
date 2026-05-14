@@ -447,6 +447,10 @@ namespace ExcelMerge {
 
             if (string.IsNullOrEmpty(file1) || string.IsNullOrEmpty(file2)) return;
 
+            DiffProgressBar.Value = 0;
+            DiffProgressBar.Visibility = Visibility.Visible;
+            Title = "ExcelMerge - Loading...";
+
             var oldSrc = books.ContainsKey("src") ? books["src"] : null;
             var oldDst = books.ContainsKey("dst") ? books["dst"] : null;
 
@@ -463,6 +467,7 @@ namespace ExcelMerge {
             }
             catch (Exception ex)
             {
+                DiffProgressBar.Visibility = Visibility.Collapsed;
                 System.Diagnostics.Debug.WriteLine($"Refresh 加载工作簿异常: {ex}");
                 MessageBox.Show($"无法打开文件: {ex.Message}", "ExcelMerge", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -474,26 +479,24 @@ namespace ExcelMerge {
             var option = new DiffOption<SheetNameCombo>();
             option.EqualityComparer = new SheetNameComboComparer();
             var result = DiffUtil.Diff(src.sheetNameCombos, dst.sheetNameCombos, option);
-            //diffSheetName = result.ToList();//
             diffSheetName = DiffUtil.OptimizeCaseDeletedFirst(result).ToList();
             books["src"] = src;
             books["dst"] = dst;
             var srcSheetID = -1;
             var dstSheetID = -1;
 
-            for (int i = 0; i < diffSheetName.Count; ++i) {
+            int totalSheets = diffSheetName.Count;
+            for (int i = 0; i < totalSheets; ++i) {
                 var sheetname = diffSheetName[i];
                 var name = sheetname.Obj1 == null ? sheetname.Obj2.Name : sheetname.Obj1.Name;
 
-                // 只有sheet名字一样的可以diff， 先这么处理
                 if (sheetname.Status == DiffStatus.Equal) {
                     var sheet1 = sheetname.Obj1.ID;
                     var sheet2 = sheetname.Obj2.ID;
-                    
+
                     sheetsDiff[name] = DiffSheet(src.book.GetSheetAt(sheet1), dst.book.GetSheetAt(sheet2));
 
                     if (sheetsDiff[name] != null) {
-                        // 找第一个不相同的sheet
                         oldsheetName = sheetname.Obj1.Name;
                         var sheetidx = 0;
                         if (!string.IsNullOrEmpty(oldsheetName)) {
@@ -513,6 +516,9 @@ namespace ExcelMerge {
                         }
                     }
                 }
+
+                DiffProgressBar.Value = (double)(i + 1) / totalSheets * 100;
+                Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.Render, new Action(() => { }));
             }
 
             // refresh ui
@@ -565,10 +571,8 @@ namespace ExcelMerge {
             comboidx = dst.ItemID2ComboIdx[dst.sheet];
             DstFileSheetsCombo.SelectedItem = dst.sheetCombo[comboidx];
 
-            //DstDataGrid.RefreshData();
-            //SrcDataGrid.RefreshData();
-
-            //OnSheetChanged();
+            DiffProgressBar.Visibility = Visibility.Collapsed;
+            Title = "ExcelMerge";
         }
 
         public int DiffStartIdx(int emptyline) {

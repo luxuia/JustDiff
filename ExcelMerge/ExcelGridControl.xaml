@@ -24,6 +24,12 @@
                         VirtualizingPanel.VirtualizationMode="Recycling"
 					  VirtualizingPanel.IsVirtualizing="True"
                         ScrollViewer.ScrollChanged ="ExcelGrid_ScrollChanged" SelectionChanged="ExcelGrid_SelectionChanged" SelectedCellsChanged="ExcelGrid_SelectedCellsChanged">
+                <DataGrid.Resources>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#0078D7"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#0078D7"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="Black"/>
+                </DataGrid.Resources>
                 <DataGrid.ContextMenu>
                     <ContextMenu Name="CtxMenu">
                     </ContextMenu>

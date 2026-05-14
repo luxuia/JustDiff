@@ -1,0 +1,60 @@
+<Window x:Class="ExcelMerge.UnityDifferWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ExcelMerge"
+        mc:Ignorable="d"
+        Title="Unity Diff" Height="700" Width="1200"
+        Closing="Window_Closing">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top toolbar -->
+        <Grid Grid.Row="0" Background="LightCoral">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Label x:Name="SrcFilePath" Grid.Column="0" VerticalAlignment="Center" Content="(drag src file)"/>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                <Button x:Name="TextDiffBtn" Content="Text Diff" Padding="8,2"
+                        VerticalAlignment="Center" Click="TextDiff_Click"/>
+                <CheckBox x:Name="ShowAllNodes" Content="Show All" Margin="10,0,0,0"
+                          VerticalAlignment="Center" Click="ShowAllNodes_Click"/>
+                <CheckBox x:Name="OnlyNodeChanges" Content="Only Node Add/Del" Margin="10,0,0,0"
+                          VerticalAlignment="Center" IsChecked="True" Click="OnlyNodeChanges_Click"/>
+            </StackPanel>
+
+            <Label x:Name="DstFilePath" Grid.Column="2" VerticalAlignment="Center" Content="(drag dst file)"/>
+        </Grid>
+
+        <ProgressBar x:Name="DiffProgressBar" Grid.Row="1" Height="4" Minimum="0" Maximum="100"
+                     Visibility="Collapsed" Foreground="#0078D7"/>
+
+        <!-- Main content -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Tree view mode -->
+            <local:UnityTreeControl x:Name="SrcTreeControl" Grid.Column="0"
+                                    AllowDrop="True" Tag="src"/>
+            <local:UnityTreeControl x:Name="DstTreeControl" Grid.Column="2"
+                                    AllowDrop="True" Tag="dst"/>
+
+<GridSplitter Grid.Column="1" Background="DarkGray"
+                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        </Grid>
+    </Grid>
+</Window>
