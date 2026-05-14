@@ -36,7 +36,7 @@ namespace ExcelMerge
                     {
                         LineNumber = "",
                         Text = "",
-                        Background = Brushes.LightGreen
+                        Background = DiffColors.Inserted
                     });
                     continue;
                 }
@@ -46,7 +46,7 @@ namespace ExcelMerge
                     {
                         LineNumber = "",
                         Text = "",
-                        Background = Brushes.LightGray
+                        Background = DiffColors.Deleted
                     });
                     continue;
                 }
@@ -54,17 +54,17 @@ namespace ExcelMerge
                 lineNum++;
                 var text = isSrc ? (dr.Obj1 ?? "") : (dr.Obj2 ?? "");
 
-                Brush bg = Brushes.White;
+                Brush bg = Brushes.Transparent;
                 switch (dr.Status)
                 {
                     case DiffStatus.Modified:
-                        bg = Brushes.LightYellow;
+                        bg = DiffColors.Modified;
                         break;
                     case DiffStatus.Deleted:
-                        bg = Brushes.LightGray;
+                        bg = DiffColors.Deleted;
                         break;
                     case DiffStatus.Inserted:
-                        bg = Brushes.LightGreen;
+                        bg = DiffColors.Inserted;
                         break;
                 }
 

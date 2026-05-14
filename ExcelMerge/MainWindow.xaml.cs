@@ -540,7 +540,8 @@ namespace ExcelMerge {
                 }
 
                 if (color != null) {
-                    item.Background = color;
+                    item.Foreground = new SolidColorBrush(Color.FromRgb(0xC0, 0x39, 0x2B));
+                    item.FontWeight = FontWeights.Bold;
                 }
 
                 SrcFileSheetsCombo.Items.Add(item);
@@ -563,7 +564,8 @@ namespace ExcelMerge {
                 }
 
                 if (color != null) {
-                    item.Background = color;
+                    item.Foreground = new SolidColorBrush(Color.FromRgb(0xC0, 0x39, 0x2B));
+                    item.FontWeight = FontWeights.Bold;
                 }
 
                 DstFileSheetsCombo.Items.Add(item);

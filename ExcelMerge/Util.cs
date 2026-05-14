@@ -14,6 +14,28 @@ using System.IO;
 using System.Windows.Documents;
 
 namespace ExcelMerge {
+    static class DiffColors {
+        public static readonly SolidColorBrush Modified = new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x54));
+        public static readonly SolidColorBrush ModifiedStrong = new SolidColorBrush(Color.FromRgb(0xFF, 0xC1, 0x07));
+        public static readonly SolidColorBrush Inserted = new SolidColorBrush(Color.FromRgb(0x90, 0xEE, 0x90));
+        public static readonly SolidColorBrush InsertedStrong = new SolidColorBrush(Color.FromRgb(0x5C, 0xD6, 0x5C));
+        public static readonly SolidColorBrush Deleted = new SolidColorBrush(Color.FromRgb(0xD0, 0xD0, 0xD0));
+        public static readonly SolidColorBrush DeletedStrong = new SolidColorBrush(Color.FromRgb(0xB0, 0xB0, 0xB0));
+        public static readonly SolidColorBrush TextMuted = new SolidColorBrush(Color.FromRgb(0x6C, 0x75, 0x7D));
+        public static readonly SolidColorBrush TextHighlight = new SolidColorBrush(Color.FromRgb(0xDC, 0x14, 0x3C));
+
+        static DiffColors() {
+            Modified.Freeze();
+            ModifiedStrong.Freeze();
+            Inserted.Freeze();
+            InsertedStrong.Freeze();
+            Deleted.Freeze();
+            DeletedStrong.Freeze();
+            TextMuted.Freeze();
+            TextHighlight.Freeze();
+        }
+    }
+
     class Util {
         public static T GetVisualChild<T>(DependencyObject parent) where T : Visual {
             T child = null;
@@ -49,11 +71,11 @@ namespace ExcelMerge {
         public static SolidColorBrush GetColorByDiffStatus(DiffStatus status) {
             switch (status) {
                 case DiffStatus.Deleted:
-                    return Brushes.Gray;
+                    return DiffColors.Deleted;
                 case DiffStatus.Inserted:
-                    return Brushes.Green;
+                    return DiffColors.Inserted;
                 case DiffStatus.Modified:
-                    return Brushes.Yellow; 
+                    return DiffColors.Modified;
             }
             return null;
         }

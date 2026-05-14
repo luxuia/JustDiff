@@ -14,7 +14,7 @@ namespace ExcelMerge
         public string StatusText { get; set; }
         public Brush Background { get; set; }
         public Brush Foreground { get; set; } = Brushes.Black;
-        public Brush StatusForeground { get; set; } = Brushes.Red;
+        public Brush StatusForeground { get; set; } = DiffColors.TextHighlight;
         public TextDecorationCollection TextDecorations { get; set; }
         public bool IsVisible { get; set; }
         public bool IsExpanded { get; set; }
@@ -131,31 +131,31 @@ namespace ExcelMerge
                             var myName = isSrc ? node.SrcNode.Name : node.DstNode.Name;
                             var otherName = isSrc ? node.DstNode.Name : node.SrcNode.Name;
                             vm.DisplayName = myName;
-                            vm.Background = Brushes.Yellow;
+                            vm.Background = DiffColors.ModifiedStrong;
                             vm.StatusText = $"(renamed: {otherName})";
-                            vm.StatusForeground = Brushes.DarkOrange;
+                            vm.StatusForeground = DiffColors.TextHighlight;
                         }
                         else
                         {
-                            vm.Background = Brushes.LightYellow;
+                            vm.Background = DiffColors.Modified;
                             vm.StatusText = "(modified)";
                         }
                         break;
                     case DiffStatus.Deleted:
                         if (isSrc)
                         {
-                            vm.Background = Brushes.LightGray;
+                            vm.Background = DiffColors.Deleted;
                             vm.StatusText = "(deleted)";
                             vm.TextDecorations = System.Windows.TextDecorations.Strikethrough;
-                            vm.Foreground = Brushes.Gray;
+                            vm.Foreground = DiffColors.TextMuted;
                         }
                         else
                         {
                             vm.DisplayName = "[无]";
                             vm.DisplayComponents = "";
                             vm.StatusText = "";
-                            vm.Background = Brushes.LightGray;
-                            vm.Foreground = Brushes.Gray;
+                            vm.Background = DiffColors.Deleted;
+                            vm.Foreground = DiffColors.TextMuted;
                         }
                         break;
                     case DiffStatus.Inserted:
@@ -164,14 +164,14 @@ namespace ExcelMerge
                             vm.DisplayName = "[无]";
                             vm.DisplayComponents = "";
                             vm.StatusText = "";
-                            vm.Background = Brushes.LightGreen;
-                            vm.Foreground = Brushes.Gray;
+                            vm.Background = DiffColors.Inserted;
+                            vm.Foreground = DiffColors.TextMuted;
                         }
                         else
                         {
-                            vm.Background = Brushes.LightGreen;
+                            vm.Background = DiffColors.InsertedStrong;
                             vm.StatusText = "(added)";
-                            vm.StatusForeground = Brushes.Green;
+                            vm.StatusForeground = DiffColors.Inserted;
                         }
                         break;
                     default:
@@ -215,7 +215,7 @@ namespace ExcelMerge
             {
                 foreach (var kv in node.Properties.OrderBy(k => k.Key))
                 {
-                    Brush bg = Brushes.White;
+                    Brush bg = Brushes.Transparent;
                     var displayValue = kv.Value;
 
                     if (changedMap.TryGetValue(kv.Key, out var prop))
@@ -224,13 +224,13 @@ namespace ExcelMerge
                         switch (prop.Status)
                         {
                             case DiffStatus.Modified:
-                                bg = Brushes.Yellow;
+                                bg = DiffColors.Modified;
                                 break;
                             case DiffStatus.Deleted:
-                                bg = Brushes.LightGray;
+                                bg = DiffColors.Deleted;
                                 break;
                             case DiffStatus.Inserted:
-                                bg = Brushes.LightGreen;
+                                bg = DiffColors.Inserted;
                                 break;
                         }
                     }
@@ -249,9 +249,9 @@ namespace ExcelMerge
                 if (node != null && node.Properties.ContainsKey(prop.Key)) continue;
 
                 var value = (isSrc ? prop.SrcValue : prop.DstValue) ?? "";
-                Brush bg = prop.Status == DiffStatus.Inserted ? Brushes.LightGreen
-                         : prop.Status == DiffStatus.Deleted ? Brushes.LightGray
-                         : Brushes.Yellow;
+                Brush bg = prop.Status == DiffStatus.Inserted ? DiffColors.Inserted
+                         : prop.Status == DiffStatus.Deleted ? DiffColors.Deleted
+                         : DiffColors.Modified;
 
                 items.Add(new PropertyViewModel
                 {

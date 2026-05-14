@@ -5,27 +5,27 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ExcelMerge"
         mc:Ignorable="d"
-        Title="Unity Diff" Height="700" Width="1200"
+        Title="JustDiff - Unity" Height="700" Width="1200"
         Closing="Window_Closing">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="40"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Top toolbar -->
-        <Grid Grid.Row="0" Background="LightCoral">
+        <Grid Grid.Row="0" Background="#F0F0F0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Label x:Name="SrcFilePath" Grid.Column="0" VerticalAlignment="Center" Content="(drag src file)"/>
+            <Label x:Name="SrcFilePath" Grid.Column="0" VerticalAlignment="Center" Content="(drag src file)" Foreground="#1E1E2E"/>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-                <Button x:Name="TextDiffBtn" Content="Text Diff" Padding="8,2"
+                <Button x:Name="TextDiffBtn" Content="Text Diff" Padding="8,4"
                         VerticalAlignment="Center" Click="TextDiff_Click"/>
                 <CheckBox x:Name="ShowAllNodes" Content="Show All" Margin="10,0,0,0"
                           VerticalAlignment="Center" Click="ShowAllNodes_Click"/>
@@ -33,7 +33,7 @@
                           VerticalAlignment="Center" IsChecked="True" Click="OnlyNodeChanges_Click"/>
             </StackPanel>
 
-            <Label x:Name="DstFilePath" Grid.Column="2" VerticalAlignment="Center" Content="(drag dst file)"/>
+            <Label x:Name="DstFilePath" Grid.Column="2" VerticalAlignment="Center" Content="(drag dst file)" Foreground="#1E1E2E"/>
         </Grid>
 
         <ProgressBar x:Name="DiffProgressBar" Grid.Row="1" Height="4" Minimum="0" Maximum="100"
@@ -47,13 +47,12 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Tree view mode -->
             <local:UnityTreeControl x:Name="SrcTreeControl" Grid.Column="0"
                                     AllowDrop="True" Tag="src"/>
             <local:UnityTreeControl x:Name="DstTreeControl" Grid.Column="2"
                                     AllowDrop="True" Tag="dst"/>
 
-<GridSplitter Grid.Column="1" Background="DarkGray"
+            <GridSplitter Grid.Column="1" Background="#D0D0D0"
                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         </Grid>
     </Grid>

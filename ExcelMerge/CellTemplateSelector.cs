@@ -27,7 +27,7 @@ namespace ExcelMerge {
         public override System.Windows.DataTemplate SelectTemplate(object item, System.Windows.DependencyObject container) {
             if (item is ExcelData rowdata) {
 
-                Brush bg = Brushes.White;
+                Brush bg = Brushes.Transparent;
                     var rowdiff = rowdata.diffstatus;
                     if (rowdiff != null && rowdiff.diffcells.Count > ColumnID && ColumnID >= 0) {
                         var diffid = rowdata.column2diff[ColumnID];
@@ -38,17 +38,15 @@ namespace ExcelMerge {
 
                         switch (status) {
                             case DiffStatus.Modified:
-                                bg = Brushes.Yellow;
+                                bg = new SolidColorBrush(Color.FromArgb(0x60, 0xF9, 0xE2, 0xAF));
                                 break;
                             case DiffStatus.Deleted:
-                                // 列增删的时候不好处理，不显示影响的格子
                                 if (rowdata.tag == "src")
-                                    bg = Brushes.Gray;
+                                    bg = new SolidColorBrush(Color.FromArgb(0x50, 0x80, 0x80, 0x80));
                                 break;
                             case DiffStatus.Inserted:
-                                // 列增删的时候不好处理，不显示影响的格子
                                 if (rowdata.tag == "dst")
-                                    bg = Brushes.LightGreen;
+                                    bg = new SolidColorBrush(Color.FromArgb(0x50, 0xA6, 0xE3, 0xA1));
                                 break;
                             default:
                                 break;
@@ -76,7 +74,7 @@ namespace ExcelMerge {
                                         textBlock.SetValue(TextBlock.TextDecorationsProperty, TextDecorations.Underline);
                                     }
                                     if (diff_cell.Status != DiffStatus.Equal) {
-                                        textBlock.SetValue(TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Red);
+                                        textBlock.SetValue(TextBlock.ForegroundProperty, DiffColors.TextHighlight);
                                     }
                                 }
                             }

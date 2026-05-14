@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using ExcelMerge;
@@ -14,9 +15,13 @@ class TestExcelDiff
         if (args.Length < 2) { Console.WriteLine("Usage: TestExcelDiff src.xlsx dst.xlsx"); return; }
 
         var cfg = new Config();
-        var src = new WorkBookWrap(args[0], cfg);
-        var dst = new WorkBookWrap(args[1], cfg);
 
+        var sw = Stopwatch.StartNew();
+        var src = new WorkBookWrap(args[0], cfg);
+        var t1 = sw.ElapsedMilliseconds;
+        var dst = new WorkBookWrap(args[1], cfg);
+        var t2 = sw.ElapsedMilliseconds;
+        Console.WriteLine($"[PERF] Load src: {t1}ms, Load dst: {t2 - t1}ms, total: {t2}ms");
         Console.WriteLine($"src: {src.book.NumberOfSheets} sheets, dst: {dst.book.NumberOfSheets} sheets");
 
         var option = new DiffOption<SheetNameCombo>();
@@ -24,6 +29,7 @@ class TestExcelDiff
         var diffSheetName = DiffUtil.OptimizeCaseDeletedFirst(
             DiffUtil.Diff(src.sheetNameCombos, dst.sheetNameCombos, option)).ToList();
 
+        long totalDiffTime = 0;
         foreach (var d in diffSheetName)
         {
             var name = d.Obj1?.Name ?? d.Obj2?.Name;
@@ -36,62 +42,71 @@ class TestExcelDiff
             var s1 = src.book.GetSheetAt(d.Obj1.ID);
             var s2 = dst.book.GetSheetAt(d.Obj2.ID);
 
-            // Check row counts
-            var srcRows = src.SheetValideRow.ContainsKey(name) ? src.SheetValideRow[name] : -1;
-            var dstRows = dst.SheetValideRow.ContainsKey(name) ? dst.SheetValideRow[name] : -1;
             var srcCols = s1.RowCount > 0 ? s1.GetRow(0)?.Cells.Count ?? 0 : 0;
             var dstCols = s2.RowCount > 0 ? s2.GetRow(0)?.Cells.Count ?? 0 : 0;
 
-            // Quick cell-by-cell comparison
-            int diffCells = 0;
-            string firstDiff = null;
-            int maxRows = Math.Max(s1.RowCount, s2.RowCount);
-            int maxCols = Math.Max(srcCols, dstCols);
-            for (int r = 0; r < maxRows && diffCells < 5; r++)
+            // Measure per-sheet diff time
+            sw.Restart();
+
+            // Simulate what DiffConfigSheet does:
+            // 1. GetHeaderStrList
+            var head1 = GetHeaders(src, s1, cfg);
+            var head2 = GetHeaders(dst, s2, cfg);
+            var tHead = sw.ElapsedMilliseconds;
+
+            // 2. Header diff
+            var headList1 = GetHeaderStrList(src, s1, cfg);
+            var headList2 = GetHeaderStrList(dst, s2, cfg);
+            List<DiffResult<string>> headDiff = null;
+            if (headList1 != null && headList2 != null)
             {
-                var r1 = s1.GetRow(r);
-                var r2 = s2.GetRow(r);
-                for (int c = 0; c < maxCols && diffCells < 5; c++)
+                headDiff = DiffUtil.OptimizeCaseDeletedFirst(
+                    DiffUtil.Diff(headList1, headList2)).ToList();
+            }
+            var tHeadDiff = sw.ElapsedMilliseconds;
+
+            // 3. ID diff (row matching)
+            var idList1 = GetIDList(src, s1, cfg);
+            var idList2 = GetIDList(dst, s2, cfg);
+            var idOption = new DiffOption<string2int>();
+            idOption.EqualityComparer = new SheetIDComparer();
+            var idDiff = DiffUtil.Diff(idList1, idList2, idOption).ToList();
+            var tIDDiff = sw.ElapsedMilliseconds;
+
+            // 4. Row-by-row diff
+            int changedRows = 0;
+            int colCount = headList1?.Count ?? srcCols;
+            foreach (var idResult in idDiff)
+            {
+                if (idResult.Obj1.Key != null && idResult.Obj2.Key != null)
                 {
-                    var v1 = r1?.GetCell(c)?.DisplayValue ?? "";
-                    var v2 = r2?.GetCell(c)?.DisplayValue ?? "";
-                    if (v1 != v2)
+                    // Both exist, compare cells
+                    var r1 = s1.GetRow(idResult.Obj1.Value);
+                    var r2 = s2.GetRow(idResult.Obj2.Value);
+                    bool rowChanged = false;
+                    for (int c = 0; c < colCount; c++)
                     {
-                        diffCells++;
-                        if (firstDiff == null)
-                            firstDiff = $"row={r} col={c} src=[{Trunc(v1)}] dst=[{Trunc(v2)}]";
+                        var v1 = r1?.GetCell(c)?.DisplayValue ?? "";
+                        var v2 = r2?.GetCell(c)?.DisplayValue ?? "";
+                        if (v1 != v2) { rowChanged = true; break; }
                     }
+                    if (rowChanged) changedRows++;
+                }
+                else
+                {
+                    changedRows++;
                 }
             }
+            var tRowDiff = sw.ElapsedMilliseconds;
+            totalDiffTime += tRowDiff;
 
-            var realChanged = diffCells > 0;
+            bool headerChanged = headDiff != null && headDiff.Any(a => a.Status != DiffStatus.Equal);
+            bool idChanged = idDiff.Any(a => a.Status != DiffStatus.Equal);
 
-            // Check what GetHeaderStrList would produce
-            var srcHead = GetHeaders(src, s1, cfg);
-            var dstHead = GetHeaders(dst, s2, cfg);
-
-            Console.WriteLine($"  SHEET [{name}] srcRows={s1.RowCount} dstRows={s2.RowCount} srcCols={srcCols} dstCols={dstCols} headCols={srcHead}/{dstHead} validRow={srcRows}/{dstRows} diffCells={diffCells} realChanged={realChanged}");
-            if (firstDiff != null)
-                Console.WriteLine($"    first diff: {firstDiff}");
-            if (srcCols != dstCols && diffCells == 0)
-            {
-                int minC = Math.Min(srcCols, dstCols);
-                int maxC = Math.Max(srcCols, dstCols);
-                var wider = srcCols > dstCols ? s1 : s2;
-                var tag = srcCols > dstCols ? "src" : "dst";
-                Console.WriteLine($"    TRAILING cols [{minC}..{maxC-1}] in {tag}:");
-                for (int c = minC; c < Math.Min(maxC, minC + 5); c++)
-                {
-                    for (int r = 0; r < Math.Min(wider.RowCount, 3); r++)
-                    {
-                        var cell = wider.GetRow(r)?.GetCell(c);
-                        var ct = cell?.CellType.ToString() ?? "null";
-                        var dv = cell?.DisplayValue ?? "(null)";
-                        Console.WriteLine($"      col={c} row={r} type={ct} display=[{dv}]");
-                    }
-                }
-            }
+            Console.WriteLine($"  SHEET [{name}] rows={s1.RowCount}/{s2.RowCount} cols={srcCols}/{dstCols} idRows={idList1.Count}/{idList2.Count} headChanged={headerChanged} idChanged={idChanged} changedRows={changedRows}");
+            Console.WriteLine($"    [TIME] header={tHead}ms headDiff={tHeadDiff - tHead}ms idDiff={tIDDiff - tHeadDiff}ms rowDiff={tRowDiff - tIDDiff}ms total={tRowDiff}ms");
         }
+        Console.WriteLine($"[PERF] Total diff time: {totalDiffTime}ms");
     }
 
     static int GetHeaders(WorkBookWrap wrap, ISheet sheet, Config cfg)
@@ -107,7 +122,6 @@ class TestExcelDiff
         }
         if (rows.Count == 0) return -1;
         int count = 0;
-        bool foundEmpty = false;
         for (int i = startcol; i < rows[0].Cells.Count; i++)
         {
             var str = "";
@@ -116,29 +130,54 @@ class TestExcelDiff
                 var v = rows[j].GetCell(i)?.DisplayValue ?? "";
                 str += (j > 0 ? ":" : "") + v;
             }
-            if (string.IsNullOrWhiteSpace(str))
-            {
-                if (!foundEmpty)
-                {
-                    foundEmpty = true;
-                    Console.WriteLine($"    HEAD [{sheet.SheetName}] empty at col={i}, but cells.count={rows[0].Cells.Count}");
-                    // print next few cols
-                    for (int k = i; k < Math.Min(i + 5, rows[0].Cells.Count); k++)
-                    {
-                        var sv = "";
-                        for (int j = 0; j < rows.Count; j++)
-                        {
-                            var v = rows[j].GetCell(k)?.DisplayValue ?? "";
-                            sv += (j > 0 ? "|" : "") + v;
-                        }
-                        Console.WriteLine($"      col[{k}] = [{sv}]");
-                    }
-                }
-                break;
-            }
+            if (string.IsNullOrWhiteSpace(str)) break;
             count++;
         }
         return count;
+    }
+
+    static List<string> GetHeaderStrList(WorkBookWrap wrap, ISheet sheet, Config cfg)
+    {
+        var sp = wrap.SheetStartPoint[sheet.SheetName];
+        int startrow = sp.Item1, startcol = sp.Item2;
+        int headEnd = cfg.HeadCount + startrow;
+        var rows = new List<IRow>();
+        for (int i = startrow; i < headEnd; i++)
+        {
+            var r = sheet.GetRow(i);
+            if (r != null) rows.Add(r);
+        }
+        if (rows.Count == 0) return null;
+        var header = new List<string>();
+        for (int i = startcol; i < rows[0].Cells.Count; i++)
+        {
+            var str = "";
+            for (int j = 0; j < rows.Count; j++)
+            {
+                var v = rows[j].GetCell(i)?.DisplayValue ?? "";
+                str += (j > 0 ? ":" + v : v);
+            }
+            if (string.IsNullOrWhiteSpace(str)) break;
+            header.Add(str);
+        }
+        return header;
+    }
+
+    static List<string2int> GetIDList(WorkBookWrap wrap, ISheet sheet, Config cfg)
+    {
+        var sp = wrap.SheetStartPoint[sheet.SheetName];
+        int startrow = sp.Item1;
+        int startIdx = cfg.HeadCount + startrow;
+        var validRow = wrap.SheetValideRow.ContainsKey(sheet.SheetName) ? wrap.SheetValideRow[sheet.SheetName] : sheet.RowCount;
+        var list = new List<string2int>();
+        for (int i = startIdx; i < validRow; i++)
+        {
+            var row = sheet.GetRow(i);
+            if (row == null) break;
+            var val = row.GetCell(0)?.DisplayValue ?? "";
+            list.Add(new string2int(val, i));
+        }
+        return list;
     }
 
     static string Trunc(string s) => s.Length > 40 ? s.Substring(0, 40) + "..." : s;

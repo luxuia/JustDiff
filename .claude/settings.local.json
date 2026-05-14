@@ -22,7 +22,11 @@
       "Bash(grep \"/Prefab/.*\\\\.prefab$\")",
       "Bash(grep \"^   M.*/Prefab/.*\\\\.prefab$\")",
       "Bash(reg query *)",
-      "Bash(dotnet *)"
+      "Bash(dotnet *)",
+      "Bash(reg delete *)",
+      "Bash(powershell *)",
+      "Bash(ExcelMerge/bin/Release/net6.0-windows/ExcelMerge.exe)",
+      "WebSearch"
     ]
   }
 }

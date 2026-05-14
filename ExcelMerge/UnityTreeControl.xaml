@@ -58,7 +58,21 @@
 
         <DataGrid x:Name="PropertyGrid" Grid.Row="2" AutoGenerateColumns="False"
                   IsReadOnly="True" HeadersVisibility="Column"
-                  CanUserAddRows="False" CanUserDeleteRows="False">
+                  CanUserAddRows="False" CanUserDeleteRows="False"
+                  SelectionUnit="FullRow">
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="BorderBrush" Value="#C0C0C0"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#330078D7"/>
+                            <Setter Property="BorderBrush" Value="#0078D7"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.CellStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Property" Binding="{Binding Key}" Width="*">
                     <DataGridTextColumn.ElementStyle>

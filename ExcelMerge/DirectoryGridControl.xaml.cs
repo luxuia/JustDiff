@@ -161,16 +161,14 @@ namespace ExcelMerge {
 
                     switch (status) {
                         case DiffStatus.Modified:
-                            return Brushes.Yellow;
+                            return DiffColors.Modified;
                         case DiffStatus.Deleted:
-                            // 列增删的时候不好处理，不显示影响的格子
                             if (rowdata.tag == "src")
-                                return Brushes.Gray;
+                                return DiffColors.Deleted;
                             break;
                         case DiffStatus.Inserted:
-                            // 列增删的时候不好处理，不显示影响的格子
                             if (rowdata.tag == "dst")
-                                return Brushes.LightGreen;
+                                return DiffColors.Inserted;
                             break;
                         default:
                             return DependencyProperty.UnsetValue;

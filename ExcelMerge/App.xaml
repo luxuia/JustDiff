@@ -3,18 +3,25 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:ExcelMerge"
              xmlns:System="clr-namespace:System;assembly=mscorlib"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              Startup="Application_Startup"
              Exit="Application_Exit">
     <Application.Resources>
-        <System:String x:Key="BranchPath">分支路径:</System:String>
-        <System:String x:Key="ReversionId">搜索:</System:String>
-        <System:String x:Key="ReversionIdConfirm">确认</System:String>
-        <System:String x:Key="ReversionSelect">版本选择:</System:String>
-        <System:String x:Key="DiffLabel">对比</System:String>
-        <System:String x:Key="ApplyLabel">保存</System:String>
-        <System:String x:Key="SimpleHeaderLabel">处理表头</System:String>
-		<System:String x:Key="VersionSearch">单号搜索</System:String>
-		<System:String x:Key="CommitID">单号列表(空格)</System:String>
-        <System:String x:Key="SortKey">关键列</System:String>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemesDictionary Theme="Light" />
+                <ui:ControlsDictionary />
+            </ResourceDictionary.MergedDictionaries>
+            <System:String x:Key="BranchPath">分支路径:</System:String>
+            <System:String x:Key="ReversionId">搜索:</System:String>
+            <System:String x:Key="ReversionIdConfirm">确认</System:String>
+            <System:String x:Key="ReversionSelect">版本选择:</System:String>
+            <System:String x:Key="DiffLabel">对比</System:String>
+            <System:String x:Key="ApplyLabel">保存</System:String>
+            <System:String x:Key="SimpleHeaderLabel">处理表头</System:String>
+            <System:String x:Key="VersionSearch">单号搜索</System:String>
+            <System:String x:Key="CommitID">单号列表(空格)</System:String>
+            <System:String x:Key="SortKey">关键列</System:String>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

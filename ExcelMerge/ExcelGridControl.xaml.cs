@@ -215,6 +215,8 @@ namespace ExcelMerge {
 
                         var tc = new DataGridTemplateColumn();
                         tc.Header = strshow;
+                        tc.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+                        tc.MinWidth = Math.Max(80, strshow.Length * 8 + 20);
                         tc.CellTemplateSelector = new CellTemplateSelector(encodestr, i, tag);
                         tc.CellEditingTemplateSelector = new CellTemplateSelector(encodestr, i, tag);
 
@@ -232,6 +234,8 @@ namespace ExcelMerge {
 
                         var tc = new DataGridTemplateColumn();
                         tc.Header = Util.NumberToExcelColumnId(i+1);
+                        tc.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+                        tc.MinWidth = 80;
                         tc.CellTemplateSelector = new CellTemplateSelector(str, i, tag);
                         tc.CellEditingTemplateSelector = new CellTemplateSelector(str, i, tag);
 

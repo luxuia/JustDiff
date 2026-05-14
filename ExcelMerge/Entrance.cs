@@ -218,9 +218,6 @@ namespace ExcelMerge
         {
             try
             {
-                using var svnKey = Registry.CurrentUser.OpenSubKey(@"Software\TortoiseSVN", false);
-                if (svnKey == null) return;
-
                 var exePath = Environment.ProcessPath;
                 if (string.IsNullOrEmpty(exePath))
                     exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
@@ -234,7 +231,7 @@ namespace ExcelMerge
                 foreach (var ext in extensions)
                 {
                     var existing = diffKey.GetValue(ext) as string;
-                    if (existing != null && existing.StartsWith($"\"{exePath}\"", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(existing, command, StringComparison.OrdinalIgnoreCase))
                         continue;
                     diffKey.SetValue(ext, command, RegistryValueKind.String);
                 }

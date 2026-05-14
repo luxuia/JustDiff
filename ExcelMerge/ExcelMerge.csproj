@@ -80,6 +80,7 @@
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+    <PackageReference Include="WPF-UI" Version="3.0.5" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="NetDiff\obj\Debug\.NETFramework,Version=v4.5.2.AssemblyAttributes.cs" />
