@@ -13,6 +13,12 @@ class TestUnityDiff
 
     static void Main(string[] args)
     {
+        if (args.Length > 0 && args[0] == "--diag")
+        {
+            DiagDiff(args[1], args[2]);
+            return;
+        }
+
         if (args.Length > 0 && args[0] == "--textdiff")
         {
             TestTextDiffPerf();
@@ -155,6 +161,64 @@ class TestUnityDiff
 
         Console.WriteLine(new string('=', 80));
         Console.WriteLine($"RESULTS: {ok} ok, {fail} fail, {ok + fail} total");
+    }
+
+    static void DiagDiff(string srcFile, string dstFile)
+    {
+        Console.WriteLine($"=== Parsing SRC: {srcFile} ===");
+        var srcRoots = UnityDiffEngine.ParseFile(srcFile);
+        Console.WriteLine($"SRC roots: {srcRoots.Count}");
+        PrintNodeTree(srcRoots, 0);
+
+        Console.WriteLine($"\n=== Parsing DST: {dstFile} ===");
+        var dstRoots = UnityDiffEngine.ParseFile(dstFile);
+        Console.WriteLine($"DST roots: {dstRoots.Count}");
+        PrintNodeTree(dstRoots, 0);
+
+        Console.WriteLine($"\n=== Finding differences ===");
+        // Compare names at each level
+        var srcNames = new HashSet<string>(srcRoots.SelectMany(r => FlattenNames(r)));
+        var dstNames = new HashSet<string>(dstRoots.SelectMany(r => FlattenNames(r)));
+        var onlySrc = srcNames.Except(dstNames).ToList();
+        var onlyDst = dstNames.Except(srcNames).ToList();
+        if (onlySrc.Count > 0) Console.WriteLine($"Only in SRC: {string.Join(", ", onlySrc)}");
+        if (onlyDst.Count > 0) Console.WriteLine($"Only in DST: {string.Join(", ", onlyDst)}");
+        if (onlySrc.Count == 0 && onlyDst.Count == 0) Console.WriteLine("All node paths match!");
+
+        Console.WriteLine($"\n=== Running Diff ===");
+        UnityDiffEngine.OnlyNodeChanges = true;
+        var diffNodes = UnityDiffEngine.DiffRoots(srcRoots, dstRoots);
+        PrintDiffTree(diffNodes, 0);
+    }
+
+    static IEnumerable<string> FlattenNames(UnityNodeData node)
+    {
+        yield return node.Path;
+        foreach (var child in node.Children)
+            foreach (var p in FlattenNames(child))
+                yield return p;
+    }
+
+    static void PrintNodeTree(List<UnityNodeData> nodes, int depth)
+    {
+        foreach (var n in nodes)
+        {
+            Console.WriteLine($"{new string(' ', depth*2)}{n.Name} (children={n.Children.Count})");
+            if (depth < 4) PrintNodeTree(n.Children, depth + 1);
+        }
+    }
+
+    static void PrintDiffTree(List<UnityDiffNode> nodes, int depth)
+    {
+        foreach (var n in nodes)
+        {
+            if (n.Status != NetDiff.DiffStatus.Equal || (n.Children != null && n.Children.Any(c => c.HasChanges)))
+            {
+                var name = (n.SrcNode ?? n.DstNode)?.Name ?? "?";
+                Console.WriteLine($"{new string(' ', depth*2)}[{n.Status}] {name}");
+                if (n.Children != null) PrintDiffTree(n.Children, depth + 1);
+            }
+        }
     }
 
     static void TestTextDiffPerf()

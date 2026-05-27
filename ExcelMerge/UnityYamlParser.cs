@@ -41,7 +41,7 @@ namespace ExcelMerge
 
             var idlist = new List<long>();
             var fileid_map = new Dictionary<long, int>();
-            foreach (var item in Regex.Matches(str, @"---.+&(\d+)"))
+            foreach (var item in Regex.Matches(str, @"---.+&(-?\d+)"))
             {
                 var match = item as Match;
                 if (match != null)
@@ -84,7 +84,7 @@ namespace ExcelMerge
 
                 foreach (var com in comps)
                 {
-                    var com_fileid = com["component"]["fileID"];
+                    long com_fileid = Convert.ToInt64(com["component"]["fileID"]);
 
                     if (fileid_map.ContainsKey(com_fileid))
                     {
@@ -114,7 +114,7 @@ namespace ExcelMerge
                 var go = v.Item2;
 
                 var father = trans["m_Father"];
-                var father_id = father["fileID"];
+                long father_id = Convert.ToInt64(father["fileID"]);
                 if (father_id == 0)
                 {
                     scene.roots.Add(go);
@@ -129,6 +129,14 @@ namespace ExcelMerge
                             var parentgo = trans2go[trans_id];
                             parentgo.childs.Add(go);
                         }
+                        else
+                        {
+                            scene.roots.Add(go);
+                        }
+                    }
+                    else
+                    {
+                        scene.roots.Add(go);
                     }
                 }
             }
@@ -146,12 +154,18 @@ namespace ExcelMerge
                     }
                 }
                 var father = data["m_Modification"]["m_TransformParent"];
-                if (fileid_map.ContainsKey(father["fileID"]))
+                long fatherFileId = Convert.ToInt64(father["fileID"]);
+                if (fileid_map.ContainsKey(fatherFileId))
                 {
-                    if (trans2go.ContainsKey(fileid_map[father["fileID"]]))
+                    var tidx = fileid_map[fatherFileId];
+                    if (trans2go.ContainsKey(tidx))
                     {
-                        var parentgo = trans2go[fileid_map[father["fileID"]]];
+                        var parentgo = trans2go[tidx];
                         parentgo.childs.Add(go);
+                    }
+                    else
+                    {
+                        scene.roots.Add(go);
                     }
                 }
                 else

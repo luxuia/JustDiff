@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using NetDiff;
 
@@ -301,6 +304,68 @@ namespace ExcelMerge
                 if (found != null) return found;
             }
             return null;
+        }
+
+        private void DiffTree_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                CopySelectedNodeNames();
+                e.Handled = true;
+            }
+        }
+
+        void SafeSetClipboard(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            try { Clipboard.SetDataObject(text); }
+            catch { }
+        }
+
+        void CopySelectedNodeNames()
+        {
+            if (DiffTree.SelectedItem is TreeNodeViewModel vm && vm.DiffNode != null)
+            {
+                SafeSetClipboard(vm.DiffNode.DisplayName);
+            }
+        }
+
+        private void CopyNodeName_Click(object sender, RoutedEventArgs e)
+        {
+            CopySelectedNodeNames();
+        }
+
+        private void CopyNodePath_Click(object sender, RoutedEventArgs e)
+        {
+            if (DiffTree.SelectedItem is TreeNodeViewModel vm && vm.DiffNode != null)
+            {
+                var data = vm.DiffNode.SrcNode ?? vm.DiffNode.DstNode;
+                if (data != null)
+                    SafeSetClipboard(data.Path);
+            }
+        }
+
+        private void CopyChildStructure_Click(object sender, RoutedEventArgs e)
+        {
+            if (DiffTree.SelectedItem is TreeNodeViewModel vm && vm.DiffNode != null)
+            {
+                var sb = new StringBuilder();
+                BuildStructureText(vm.DiffNode, 0, sb);
+                if (sb.Length > 0)
+                    SafeSetClipboard(sb.ToString());
+            }
+        }
+
+        void BuildStructureText(UnityDiffNode node, int depth, StringBuilder sb)
+        {
+            var data = node.SrcNode ?? node.DstNode;
+            if (data == null) return;
+            sb.Append(new string(' ', depth * 2));
+            sb.AppendLine(data.Name);
+            foreach (var child in node.Children)
+            {
+                BuildStructureText(child, depth + 1, sb);
+            }
         }
 
         private void DiffTree_ScrollChanged(object sender, ScrollChangedEventArgs e)

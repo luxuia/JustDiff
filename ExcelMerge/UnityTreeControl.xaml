@@ -18,7 +18,15 @@
                   VirtualizingPanel.IsVirtualizing="True"
                   VirtualizingPanel.VirtualizationMode="Recycling"
                   SelectedItemChanged="DiffTree_SelectedItemChanged"
-                  ScrollViewer.ScrollChanged="DiffTree_ScrollChanged">
+                  ScrollViewer.ScrollChanged="DiffTree_ScrollChanged"
+                  KeyDown="DiffTree_KeyDown">
+            <TreeView.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="复制节点名" Click="CopyNodeName_Click"/>
+                    <MenuItem Header="复制节点路径" Click="CopyNodePath_Click"/>
+                    <MenuItem Header="复制子节点结构" Click="CopyChildStructure_Click"/>
+                </ContextMenu>
+            </TreeView.ContextMenu>
             <TreeView.Resources>
                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#0078D7"/>
                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White"/>

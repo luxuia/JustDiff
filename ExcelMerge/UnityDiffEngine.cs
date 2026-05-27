@@ -42,7 +42,19 @@ namespace ExcelMerge
             {
                 roots.Add(ConvertToNodeData(go, ""));
             }
+            System.Diagnostics.Debug.WriteLine($"[ParseFile] '{filePath}' roots={roots.Count} names=[{string.Join(", ", roots.Select(r => r.Name))}]");
+            PrintTree(roots, 1);
             return roots;
+        }
+
+        static void PrintTree(List<UnityNodeData> nodes, int depth)
+        {
+            foreach (var n in nodes)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ParseFile] {new string(' ', depth*2)}{n.Name} (children={n.Children.Count})");
+                if (depth < 3)
+                    PrintTree(n.Children, depth + 1);
+            }
         }
 
         static UnityNodeData ConvertToNodeData(UnityGameObject go, string parentPath)
@@ -114,53 +126,120 @@ namespace ExcelMerge
 
         static List<UnityDiffNode> DiffNodeLists(List<UnityNodeData> srcList, List<UnityNodeData> dstList, IProgress<double> progress = null, int depth = 0)
         {
-            var option = new DiffOption<UnityNodeData>();
-            option.EqualityComparer = new UnityNodeComparer();
-            var diffResults = DiffUtil.Diff(srcList, dstList, option);
-            var optimized = DiffUtil.OptimizeCaseDeletedFirst(diffResults).ToList();
+            var srcByName = new Dictionary<string, List<UnityNodeData>>();
+            var dstByName = new Dictionary<string, List<UnityNodeData>>();
+            foreach (var n in srcList)
+            {
+                if (!srcByName.ContainsKey(n.Name)) srcByName[n.Name] = new List<UnityNodeData>();
+                srcByName[n.Name].Add(n);
+            }
+            foreach (var n in dstList)
+            {
+                if (!dstByName.ContainsKey(n.Name)) dstByName[n.Name] = new List<UnityNodeData>();
+                dstByName[n.Name].Add(n);
+            }
 
             var result = new List<UnityDiffNode>();
-            bool reportProgress = depth == 0 && progress != null && optimized.Count > 0;
+            var matched = new HashSet<string>();
+            bool reportProgress = depth == 0 && progress != null;
+            int total = srcByName.Count + dstByName.Count;
             int done = 0;
-            foreach (var dr in optimized)
-            {
-                var node = new UnityDiffNode();
-                node.SrcNode = dr.Obj1;
-                node.DstNode = dr.Obj2;
 
-                switch (dr.Status)
+            foreach (var kv in srcByName.OrderBy(k => k.Key))
+            {
+                var name = kv.Key;
+                var srcNodes = kv.Value;
+                matched.Add(name);
+
+                if (dstByName.TryGetValue(name, out var dstNodes))
                 {
-                    case DiffStatus.Equal:
-                        node.ChangedProperties = OnlyNodeChanges
-                            ? new List<PropertyDiff>()
-                            : DiffProperties(dr.Obj1.Properties, dr.Obj2.Properties);
-                        node.Children = DiffNodeLists(dr.Obj1.Children, dr.Obj2.Children);
-                        if (OnlyNodeChanges)
-                            node.Status = DiffStatus.Equal;
+                    int count = Math.Max(srcNodes.Count, dstNodes.Count);
+                    for (int i = 0; i < count; i++)
+                    {
+                        var node = new UnityDiffNode();
+                        if (i < srcNodes.Count && i < dstNodes.Count)
+                        {
+                            node.SrcNode = srcNodes[i];
+                            node.DstNode = dstNodes[i];
+                            node.ChangedProperties = OnlyNodeChanges
+                                ? new List<PropertyDiff>()
+                                : DiffProperties(srcNodes[i].Properties, dstNodes[i].Properties);
+                            node.Children = DiffNodeLists(srcNodes[i].Children, dstNodes[i].Children);
+                            if (OnlyNodeChanges)
+                                node.Status = (node.Children.Any(c => c.HasChanges)) ? DiffStatus.Modified : DiffStatus.Equal;
+                            else
+                                node.Status = (node.ChangedProperties.Count > 0 || node.Children.Any(c => c.HasChanges))
+                                    ? DiffStatus.Modified : DiffStatus.Equal;
+                        }
+                        else if (i < srcNodes.Count)
+                        {
+                            node.SrcNode = srcNodes[i];
+                            node.Status = DiffStatus.Deleted;
+                            node.Children = BuildChildrenFromSingleSide(srcNodes[i].Children, DiffStatus.Deleted);
+                        }
                         else
-                            node.Status = (node.ChangedProperties.Count > 0 || node.Children.Any(c => c.HasChanges))
-                                ? DiffStatus.Modified : DiffStatus.Equal;
-                        break;
-                    case DiffStatus.Modified:
-                        node.ChangedProperties = OnlyNodeChanges
-                            ? new List<PropertyDiff>()
-                            : DiffProperties(dr.Obj1.Properties, dr.Obj2.Properties);
-                        node.Children = DiffNodeLists(dr.Obj1.Children, dr.Obj2.Children);
-                        node.Status = DiffStatus.Modified;
-                        break;
-                    case DiffStatus.Deleted:
-                        node.Status = DiffStatus.Deleted;
-                        break;
-                    case DiffStatus.Inserted:
-                        node.Status = DiffStatus.Inserted;
-                        break;
+                        {
+                            node.DstNode = dstNodes[i];
+                            node.Status = DiffStatus.Inserted;
+                            node.Children = BuildChildrenFromSingleSide(dstNodes[i].Children, DiffStatus.Inserted);
+                        }
+                        result.Add(node);
+                    }
                 }
-                result.Add(node);
+                else
+                {
+                    foreach (var src in srcNodes)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[Diff] DELETED node: '{src.Name}' path='{src.Path}' (not found in dst, dst has {dstByName.Count} names)");
+                        result.Add(new UnityDiffNode { SrcNode = src, Status = DiffStatus.Deleted, Children = BuildChildrenFromSingleSide(src.Children, DiffStatus.Deleted) });
+                    }
+                }
+
                 if (reportProgress)
                 {
                     done++;
-                    progress.Report((double)done / optimized.Count);
+                    progress.Report((double)done / total);
                 }
+            }
+
+            foreach (var kv in dstByName.OrderBy(k => k.Key))
+            {
+                if (matched.Contains(kv.Key)) continue;
+                foreach (var dst in kv.Value)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Diff] INSERTED node: '{dst.Name}' path='{dst.Path}' (not found in src)");
+                    result.Add(new UnityDiffNode { DstNode = dst, Status = DiffStatus.Inserted, Children = BuildChildrenFromSingleSide(dst.Children, DiffStatus.Inserted) });
+                }
+                if (reportProgress)
+                {
+                    done++;
+                    progress.Report((double)done / total);
+                }
+            }
+
+            result.Sort((a, b) =>
+            {
+                var nameA = (a.SrcNode ?? a.DstNode)?.Name ?? "";
+                var nameB = (b.SrcNode ?? b.DstNode)?.Name ?? "";
+                return string.Compare(nameA, nameB, StringComparison.Ordinal);
+            });
+
+            return result;
+        }
+
+        static List<UnityDiffNode> BuildChildrenFromSingleSide(List<UnityNodeData> children, DiffStatus status)
+        {
+            var result = new List<UnityDiffNode>();
+            foreach (var child in children)
+            {
+                var node = new UnityDiffNode();
+                node.Status = status;
+                if (status == DiffStatus.Deleted)
+                    node.SrcNode = child;
+                else
+                    node.DstNode = child;
+                node.Children = BuildChildrenFromSingleSide(child.Children, status);
+                result.Add(node);
             }
             return result;
         }

@@ -22,18 +22,25 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Label x:Name="SrcFilePath" Grid.Column="0" VerticalAlignment="Center" Content="(drag src file)" Foreground="#1E1E2E"/>
+            <Label x:Name="SrcFilePath" Grid.Column="0" VerticalAlignment="Center" Content="(drag src file)"
+                   Foreground="#9E9E9E" FontSize="11"
+                   ToolTip="{Binding Content, RelativeSource={RelativeSource Self}}"/>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
                 <Button x:Name="TextDiffBtn" Content="Text Diff" Padding="8,4"
                         VerticalAlignment="Center" Click="TextDiff_Click"/>
-                <CheckBox x:Name="ShowAllNodes" Content="Show All" Margin="10,0,0,0"
-                          VerticalAlignment="Center" Click="ShowAllNodes_Click"/>
-                <CheckBox x:Name="OnlyNodeChanges" Content="Only Node Add/Del" Margin="10,0,0,0"
-                          VerticalAlignment="Center" IsChecked="True" Click="OnlyNodeChanges_Click"/>
+                <ComboBox x:Name="DiffModeCombo" MinWidth="200" Margin="10,0,0,0"
+                          VerticalAlignment="Center" SelectedIndex="0"
+                          SelectionChanged="DiffModeCombo_SelectionChanged">
+                    <ComboBoxItem Content="Diff: Node Changes"/>
+                    <ComboBoxItem Content="Diff: Property Changes"/>
+                    <ComboBoxItem Content="Show All"/>
+                </ComboBox>
             </StackPanel>
 
-            <Label x:Name="DstFilePath" Grid.Column="2" VerticalAlignment="Center" Content="(drag dst file)" Foreground="#1E1E2E"/>
+            <Label x:Name="DstFilePath" Grid.Column="2" VerticalAlignment="Center" Content="(drag dst file)"
+                   Foreground="#9E9E9E" FontSize="11"
+                   ToolTip="{Binding Content, RelativeSource={RelativeSource Self}}"/>
         </Grid>
 
         <ProgressBar x:Name="DiffProgressBar" Grid.Row="1" Height="4" Minimum="0" Maximum="100"
@@ -54,6 +61,19 @@
 
             <GridSplitter Grid.Column="1" Background="#D0D0D0"
                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
+            <!-- No changes overlay -->
+            <Border x:Name="NoChangesOverlay" Grid.ColumnSpan="3" Visibility="Collapsed"
+                    Background="#F8F8F8" IsHitTestVisible="False">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="&#x2714;" FontSize="48" Foreground="#4CAF50"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="No Changes" FontSize="20" Foreground="#757575"
+                               HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                    <TextBlock Text="The two files are identical in structure" FontSize="12"
+                               Foreground="#9E9E9E" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Window>

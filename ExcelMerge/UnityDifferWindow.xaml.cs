@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,8 +32,10 @@ namespace ExcelMerge
             _srcFile = srcFile;
             _dstFile = dstFile;
 
-            SrcFilePath.Content = srcFile;
-            DstFilePath.Content = dstFile;
+            SrcFilePath.Content = Path.GetFileName(srcFile);
+            SrcFilePath.ToolTip = srcFile;
+            DstFilePath.Content = Path.GetFileName(dstFile);
+            DstFilePath.ToolTip = dstFile;
 
             if (string.IsNullOrEmpty(srcFile) || string.IsNullOrEmpty(dstFile))
                 return;
@@ -57,7 +60,14 @@ namespace ExcelMerge
                 });
 
                 DiffProgressBar.Visibility = Visibility.Collapsed;
-                Title = $"Unity Diff - src:{result.srcRoots.Count} roots, dst:{result.dstRoots.Count} roots, diff:{result.diffNodes.Count} nodes";
+
+                bool hasChanges = result.diffNodes.Any(n => n.HasChanges);
+                bool showAll = DiffModeCombo.SelectedIndex == 2;
+                NoChangesOverlay.Visibility = (hasChanges || showAll) ? Visibility.Collapsed : Visibility.Visible;
+
+                Title = hasChanges
+                    ? $"Unity Diff - src:{result.srcRoots.Count} roots, dst:{result.dstRoots.Count} roots, diff:{result.diffNodes.Count} nodes"
+                    : "Unity Diff - No Changes";
 
                 SrcTreeControl.SetDiffData(result.diffNodes);
                 DstTreeControl.SetDiffData(result.diffNodes);
@@ -90,17 +100,38 @@ namespace ExcelMerge
             Process.Start(tortoiseMerge, $"/base:\"{_srcFile}\" /mine:\"{_dstFile}\"");
         }
 
-        private void ShowAllNodes_Click(object sender, RoutedEventArgs e)
+        private void DiffModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            bool showAll = ShowAllNodes.IsChecked == true;
-            SrcTreeControl.HideEqual = !showAll;
-            DstTreeControl.HideEqual = !showAll;
-        }
+            if (SrcTreeControl == null || DstTreeControl == null) return;
 
-        private void OnlyNodeChanges_Click(object sender, RoutedEventArgs e)
-        {
-            UnityDiffEngine.OnlyNodeChanges = OnlyNodeChanges.IsChecked == true;
-            Refresh(_srcFile, _dstFile);
+            int mode = DiffModeCombo.SelectedIndex;
+            bool onlyNode = mode == 0;
+            bool hideEqual = mode != 2;
+
+            if (mode == 2)
+                NoChangesOverlay.Visibility = Visibility.Collapsed;
+
+            SrcTreeControl.HideEqual = hideEqual;
+            DstTreeControl.HideEqual = hideEqual;
+
+            bool needRefresh = false;
+            if (UnityDiffEngine.OnlyNodeChanges != onlyNode)
+            {
+                UnityDiffEngine.OnlyNodeChanges = onlyNode;
+                needRefresh = true;
+            }
+
+            bool ignoreDetails = onlyNode;
+            if (UnityDiffEngine.IgnorePositionChanges != ignoreDetails ||
+                UnityDiffEngine.IgnoreFileIdChanges != ignoreDetails)
+            {
+                UnityDiffEngine.IgnorePositionChanges = ignoreDetails;
+                UnityDiffEngine.IgnoreFileIdChanges = ignoreDetails;
+                needRefresh = true;
+            }
+
+            if (needRefresh)
+                Refresh(_srcFile, _dstFile);
         }
 
 

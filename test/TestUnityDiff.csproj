@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <StartupObject>TestUnityDiff</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ExcelMerge\ExcelMerge.csproj" />
