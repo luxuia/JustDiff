@@ -12,7 +12,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using SharpSvn;
 using System.Collections.ObjectModel;
 using NetDiff;
 using string2int = System.Collections.Generic.KeyValuePair<string, int>;
@@ -103,45 +102,6 @@ namespace ExcelMerge {
         }
 
 
-        void UpdateSVNRevision(string file, string tag) {
-            if (tag == "src") {
-                Collection<SvnLogEventArgs> logitems;
-
-                DateTime startDateTime = DateTime.Now.AddDays(-60);
-                DateTime endDateTime = DateTime.Now;
-                var svnRange = new SvnRevisionRange(new SvnRevision(startDateTime), new SvnRevision(endDateTime));
-
-                List<SvnRevisionCombo> revisions = new List<SvnRevisionCombo>();
-
-                using (SvnClient client = new SvnClient()) {
-                    client.Authentication.SslServerTrustHandlers += delegate (object sender, SharpSvn.Security.SvnSslServerTrustEventArgs e) {
-                        e.AcceptedFailures = e.Failures;
-                        e.Save = true; // Save acceptance to authentication store
-                    };
-
-                    if (client.GetUriFromWorkingCopy(file) != null) {
-
-                        SvnInfoEventArgs info;
-                        client.GetInfo(file, out info);
-                        var uri = info.Uri;
-
-                        client.GetLog(uri, new SvnLogArgs(svnRange), out logitems);
-
-                        foreach (var logentry in logitems) {
-                            var author = logentry.Author;
-                            var message = logentry.LogMessage;
-                            var date = logentry.Time;
-
-                            revisions.Add(new SvnRevisionCombo() { Revision = string.Format("{0}[{1}]", author, message), ID = logentry.Revision });
-                        }
-                        revisions.Sort((a, b) => {
-                            return (int)(b.ID - a.ID);
-                        });
-                    }
-                }
-                SVNRevisionCombo.ItemsSource = revisions;
-            }
-        }
 
         //计算修改的列id 是 对应的第几列
         int[] getColumn2Diff(List<DiffResult<string>> diff, bool from) {
@@ -522,8 +482,10 @@ namespace ExcelMerge {
             }
 
             // refresh ui
-            SrcFilePath.Content = file1;
-            DstFilePath.Content = file2;
+            SrcFilePath.Content = System.IO.Path.GetFileName(file1);
+            SrcFilePath.ToolTip = file1;
+            DstFilePath.Content = System.IO.Path.GetFileName(file2);
+            DstFilePath.ToolTip = file2;
 
             SrcFileSheetsCombo.Items.Clear();
             foreach (var item in src.sheetCombo) {
@@ -574,7 +536,11 @@ namespace ExcelMerge {
             DstFileSheetsCombo.SelectedItem = dst.sheetCombo[comboidx];
 
             DiffProgressBar.Visibility = Visibility.Collapsed;
-            Title = "ExcelMerge";
+
+            bool anyChange = sheetsDiff.Values.Any(s => s != null && s.changed)
+                || diffSheetName.Any(d => d.Status != DiffStatus.Equal);
+            NoChangesOverlay.Visibility = anyChange ? Visibility.Collapsed : Visibility.Visible;
+            Title = anyChange ? "JustDiff - Excel" : "JustDiff - Excel (No Changes)";
         }
 
         public int DiffStartIdx(int emptyline) {
@@ -592,88 +558,7 @@ namespace ExcelMerge {
             Entrance.Window_Closing(this, e);
         }
 
-        bool CheckIfVersionExists(SvnClient client, Uri uri, long revision, string sheet_name, string id, string header, string value)
-        {
-            var file = Entrance.GetVersionFile(client, uri, revision);
 
-            var wrap = new WorkBookWrap(file, config);
-
-            var startpoint = wrap.SheetStartPoint[sheet_name];
-            var rowStart = startpoint.Item1;
-            var columnStart = startpoint.Item2;
-
-            var headers = wrap.SheetHeaders[sheet_name];
-            var header_idx = headers.IndexOf(header);
-
-            var ids = wrap.SheetIDs[sheet_name];
-            var id_idx = ids.IndexOf(id);
-
-            if (header_idx >= 0 && id_idx >= 0)
-            {
-                var sheet = wrap.book.GetSheet(sheet_name);
-                var row = sheet.GetRow(id_idx + rowStart);
-                var val = Util.GetCellValue( row.GetCell(header_idx + columnStart));
-                if (val == value)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public void FindCellEdit(WorkBookWrap wrap, int rowid, int col_id)
-        {
-  
-            using (SvnClient client = new SvnClient())
-            {
-                SvnInfoEventArgs info;
-                client.GetInfo(wrap.file, out info);
-                var uri = info.Uri;
-                var sheetname = wrap.sheetname;
-
-                var startpoint = wrap.SheetStartPoint[sheetname];
-                var startrow = startpoint.Item1;
-                var startcol = startpoint.Item2;
-
-                string col_name = "", value = "" ;
-                string id = wrap.SheetIDs[sheetname][rowid-startrow];
-                if (col_id >= 0)
-                {
-                    col_name = wrap.SheetHeaders[sheetname][col_id];
-                }
-
-                var fileversion = new Collection<SvnFileVersionEventArgs>();
-                client.GetFileVersions(uri, new SvnFileVersionsArgs() { Start = 0L }, out fileversion);
-
-                var left = 0;
-                var right = fileversion.Count()-1;
-
-                long  revision = 0;
-                while (left < right)
-                {
-                    var mid = (left+right) /2;
- 
-                    var exist = CheckIfVersionExists(client, uri, fileversion[mid].Revision, sheetname, id, col_name, value);
-                    if (!exist)
-                    {
-                        if (mid == right-1)
-                        {
-                            revision = right;
-                            break;
-                        }
-                        right = mid;
-                    } else
-                    {
-                        left = mid;
-                    }
-                }
-                if (revision > 0)
-                {
-                    Entrance.DiffUri(revision - 1, revision, uri);
-                }
-            }
-        }
 
         public void RefreshCurSheet() {
             Dispatcher.BeginInvoke(new Action(ReDiffCurSheet));
@@ -1068,12 +953,6 @@ namespace ExcelMerge {
             }
         }
 
-        private void SVNResivionionList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-            var selection = e.AddedItems[0] as SvnRevisionCombo;
-            SVNRevisionCombo.Width = Math.Min(selection.Revision.Length*10, 440);
-
-            Entrance.Diff(selection.ID - 1, selection.ID);
-        }
 
         public void OnGridScrollChanged(string tag, ScrollChangedEventArgs e) {
             ScrollViewer view = null;
@@ -1105,9 +984,6 @@ namespace ExcelMerge {
             Refresh();
         }
 
-        private void SVNVersionBtn_Click(object sender, RoutedEventArgs e) {
-            
-        }
 
         private void SortKeyCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) {
 

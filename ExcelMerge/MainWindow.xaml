@@ -24,17 +24,14 @@
 
         <StackPanel Grid.Row="0" Grid.Column="0" Margin="8">
             <StackPanel Orientation="Horizontal">
-                <Label Name="SrcFilePath" Foreground="#1E1E2E">c:/dir/to/path.xls</Label>
-                <ComboBox Name="SrcFileSheetsCombo" Width="80" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="SrcFileSheetsCombo_SelectionChanged"/>
+                <Label Name="SrcFilePath" Foreground="#9E9E9E" FontSize="11"
+                       ToolTip="{Binding Content, RelativeSource={RelativeSource Self}}"
+                       Content="(src)"/>
+                <ComboBox Name="SrcFileSheetsCombo" MinWidth="150" IsReadOnly="True" DisplayMemberPath="Name" SelectedValuePath="ID" SelectionChanged="SrcFileSheetsCombo_SelectionChanged"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <Label Content="{DynamicResource ReversionId}" Foreground="#1E1E2E"/>
-                <TextBox Name="SVNVerson" Width="60" Height="24" HorizontalContentAlignment="Right"/>
-                <Button Name="SVNVersionBtn" Width="50" Content="{DynamicResource ReversionIdConfirm}" Height="26" Margin="6,0" Click="SVNVersionBtn_Click"></Button>
-                <Label Content="{DynamicResource ReversionSelect}" Foreground="#1E1E2E"/>
-                <ComboBox Name="SVNRevisionCombo" Width="100" DisplayMemberPath="Revision" SelectedValuePath="ID" SelectionChanged="SVNResivionionList_SelectionChanged"/>
-                <Label Content="{DynamicResource SortKey}" Foreground="#1E1E2E"/>
-                <ComboBox Name="SortKeyCombo" Width="100" DisplayMemberPath="ColumnName" SelectedValuePath="ID" SelectionChanged="SortKeyCombo_SelectionChanged"/>
+                <Label Content="{DynamicResource SortKey}" Foreground="#1E1E2E" VerticalAlignment="Center" Padding="4,0"/>
+                <ComboBox Name="SortKeyCombo" Width="100" VerticalAlignment="Center" DisplayMemberPath="ColumnName" SelectedValuePath="ID" SelectionChanged="SortKeyCombo_SelectionChanged"/>
             </StackPanel>
         </StackPanel>
 
@@ -45,12 +42,14 @@
             </Grid.RowDefinitions>
 
             <StackPanel Orientation="Horizontal" Grid.Row="0">
-                <Label Name="DstFilePath" Foreground="#1E1E2E">c:/dir/to/path.xls</Label>
-                <ComboBox Name="DstFileSheetsCombo" IsReadOnly="True" DisplayMemberPath="Name" Width="80" SelectedValuePath="ID" SelectionChanged="DstFileSheetsCombo_SelectionChanged"/>
+                <Label Name="DstFilePath" Foreground="#9E9E9E" FontSize="11"
+                       ToolTip="{Binding Content, RelativeSource={RelativeSource Self}}"
+                       Content="(dst)"/>
+                <ComboBox Name="DstFileSheetsCombo" IsReadOnly="True" DisplayMemberPath="Name" MinWidth="150" SelectedValuePath="ID" SelectionChanged="DstFileSheetsCombo_SelectionChanged"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,4,0,0">
-                <Button Name="DoDiff" Margin="4" Click="DoDiff_Click" Content="{DynamicResource DiffLabel}" Width="50" Height="26"/>
-                <CheckBox Name="ProcessHeader" Margin="10,6,10,6" Width="69" Click="SimpleHeader_Checked" Content="{DynamicResource SimpleHeaderLabel}" IsChecked="True" />
+                <Button Name="DoDiff" Margin="4,0" Click="DoDiff_Click" Content="{DynamicResource DiffLabel}" Padding="8,2" VerticalAlignment="Center"/>
+                <CheckBox Name="ProcessHeader" Margin="10,0" VerticalAlignment="Center" Click="SimpleHeader_Checked" Content="{DynamicResource SimpleHeaderLabel}" IsChecked="True" />
             </StackPanel>
         </Grid>
 
@@ -68,5 +67,18 @@
         </local:ExcelGridControl>
 
         <GridSplitter Grid.Row="2" Grid.Column="0" Background="Transparent" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="5"/>
+
+        <!-- No changes overlay -->
+        <Border x:Name="NoChangesOverlay" Grid.Row="2" Grid.ColumnSpan="2" Visibility="Collapsed"
+                Background="#F8F8F8" IsHitTestVisible="False">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="&#x2714;" FontSize="48" Foreground="#4CAF50"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="No Changes" FontSize="20" Foreground="#757575"
+                           HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                <TextBlock Text="The two sheets are identical" FontSize="12"
+                           Foreground="#9E9E9E" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

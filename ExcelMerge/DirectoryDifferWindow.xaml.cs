@@ -12,13 +12,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.IO;
-using SharpSvn;
-using SharpSvn.UI;
 using System.Collections.ObjectModel;
 using NetDiff;
 using System.Security.Cryptography;
-using System.Text.RegularExpressions;
-
 namespace ExcelMerge {
     /// <summary>
     /// DirectoryDifferWindow.xaml 的交互逻辑
@@ -47,7 +43,6 @@ namespace ExcelMerge {
 
         public List<DiffResult<string>> results;
 
-        public List<RevisionRange> resultRevisions;
 
 
 
@@ -65,7 +60,6 @@ namespace ExcelMerge {
             fileList["dst"] = new FileInfo();
 
             results = new List<DiffResult<string>>();
-            resultRevisions = new List<RevisionRange>();
         }
 
         public void OnSetDirs(string[] dirs, string tag = "src") {
@@ -105,7 +99,6 @@ namespace ExcelMerge {
             total.Sort();
 
             results.Clear();
-            resultRevisions.Clear();
 
             var md5Hash = MD5.Create();
 
@@ -135,6 +128,9 @@ namespace ExcelMerge {
 
             DstDataGrid.refreshData();
             SrcDataGrid.refreshData();
+
+            bool anyChange = results.Any(r => r.Status != DiffStatus.Equal);
+            NoChangesOverlay.Visibility = anyChange ? Visibility.Collapsed : Visibility.Visible;
         }
 
         public void OnGridScrollChanged(string tag, ScrollChangedEventArgs e) {
@@ -158,99 +154,8 @@ namespace ExcelMerge {
             }
             var res = results[rowid];
             if (res.Status == DiffStatus.Modified) {
-                if (resultRevisions.Count < results.Count) {
-                    Entrance.Diff(src.root + res.Obj1, dst.root + res.Obj2);
-                } else {
-                    var range = resultRevisions[rowid];
-                    Entrance.SrcFile = src.root + range.file;
-                    //MainWindow.instance.OnFileLoaded(, "src", FileOpenType.Drag);
-                    Entrance.Diff(range.min, range.max);
-                }
+                Entrance.Diff(src.root + res.Obj1, dst.root + res.Obj2);
             }
-        }
-
-        public class RevisionRange {
-            public long min, max;
-            public string file;
-        }
-
-        private void DoVersionDiff_Click(object sender, RoutedEventArgs e) {
-            if (string.IsNullOrEmpty(FilterCommits.Text)) {
-                TextTip.Content = "需要填写单号，多个单号空格隔开";
-                return;
-            }
-            if (src.files.Count <=0) {
-                TextTip.Content = "拖目标文件夹进来,或目标文件夹下没有xls";
-                return;
-            }
-
-            Collection<SvnLogEventArgs> logitems;
-
-            DateTime startDateTime = DateTime.Now.AddDays(-60);
-            DateTime endDateTime = DateTime.Now;
-            var svnRange = new SvnRevisionRange(new SvnRevision(startDateTime), new SvnRevision(endDateTime));
-
-            List<SvnRevisionCombo> revisions = new List<SvnRevisionCombo>();
-
-            var files = new Dictionary<string, RevisionRange>();
-
-            var filter = FilterCommits.Text.Split(" #".ToArray(), StringSplitOptions.RemoveEmptyEntries);
-            
-            var sfilter = string.Join("|", filter);
-            var regfilter = new Regex(sfilter);
-
-            using (SvnClient client = new SvnClient()) {
-                client.Authentication.SslServerTrustHandlers += delegate (object _sender, SharpSvn.Security.SvnSslServerTrustEventArgs _e) {
-                    _e.AcceptedFailures = _e.Failures;
-                    _e.Save = true; // Save acceptance to authentication store
-                };
-
-                if (client.GetUriFromWorkingCopy(src.root) != null) {
-
-                    SvnInfoEventArgs info;
-                    client.GetInfo(src.root, out info);
-                    var uri = info.Uri;
-
-                    var rootPath = info.Path;
-
-                    client.GetLog(uri, new SvnLogArgs(svnRange), out logitems);
-
-                    foreach (var logentry in logitems) {
-                        var author = logentry.Author;
-                        var message = logentry.LogMessage;
-                        var date = logentry.Time;
-                        var revision = logentry.Revision;
-
-                        if (regfilter.IsMatch(message)) {
-                            foreach( var filepath in logentry.ChangedPaths) {
-                                var path = filepath.Path;
-
-                                RevisionRange minmax = null;
-                                if (!files.TryGetValue(path, out minmax)) {
-                                    minmax = new RevisionRange(){ min = revision, max = revision, file = path};
-                                    files[path] = minmax;
-                                }
-                                if (revision > minmax.max) minmax.max= revision;
-                                if (revision < minmax.min) minmax.min = revision;
-                            }
-                        }
-                    }
-                }
-            }
-
-            results.Clear();
-            resultRevisions.Clear();
-
-            foreach (var file in files.Keys) {
-                var range = files[file];
-                var res = new DiffResult<string>(file + "-" + range.min, file + "-" + range.max, DiffStatus.Modified);
-
-                results.Add(res);
-                resultRevisions.Add(range);
-            }
-
-            DstDataGrid.refreshData();
-            SrcDataGrid.refreshData();
         }
 
     }

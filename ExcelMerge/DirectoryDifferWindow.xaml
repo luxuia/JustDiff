@@ -19,18 +19,10 @@
         <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
                 Background="#F0F0F0" Padding="8"/>
 
-        <StackPanel Grid.Row="0" Grid.Column="0" Margin="8">
-            <StackPanel Orientation="Horizontal">
-                <Label Name="SrcDir" Foreground="#1E1E2E">c:/dir/to/</Label>
-            </StackPanel>
-            <DockPanel Margin="0,4,0,0">
-                <Label Content="{DynamicResource CommitID}" Foreground="#1E1E2E"/>
-                <TextBox Name="FilterCommits" Height="24" HorizontalAlignment="Stretch" />
-            </DockPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <Button x:Name="DoVersionDiff" Margin="4" Click="DoVersionDiff_Click" Content="{DynamicResource VersionSearch}" Width="70" Height="26"/>
-                <Label x:Name="TextTip" Foreground="#1E1E2E"/>
-            </StackPanel>
+        <StackPanel Grid.Row="0" Grid.Column="0" Margin="8" Orientation="Horizontal" VerticalAlignment="Center">
+            <Label Name="SrcDir" Foreground="#9E9E9E" FontSize="11"
+                   ToolTip="{Binding Content, RelativeSource={RelativeSource Self}}"
+                   Content="(directory)"/>
         </StackPanel>
 
         <local:DirectoryGridControl x:Name="SrcDataGrid" Grid.Column="0" Grid.Row="1" Margin="1,0,1,1"
@@ -42,5 +34,18 @@
             AllowDrop="True"
             Tag="dst">
         </local:DirectoryGridControl>
+
+        <!-- No changes overlay -->
+        <Border x:Name="NoChangesOverlay" Grid.Row="1" Grid.ColumnSpan="2" Visibility="Collapsed"
+                Background="#F8F8F8" IsHitTestVisible="False">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="&#x2714;" FontSize="48" Foreground="#4CAF50"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="No Changes" FontSize="20" Foreground="#757575"
+                           HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                <TextBlock Text="All files are identical" FontSize="12"
+                           Foreground="#9E9E9E" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

@@ -126,7 +126,6 @@ namespace ExcelMerge {
 
         public int EmptyLine = 0;
 
-        public string SvnBaseUrl = "http://m1.svn.ejoy.com/m1/";
     }
 
     public class WorkBookWrap : IDisposable {
@@ -383,10 +382,6 @@ namespace ExcelMerge {
         }
     }
 
-    public class SvnRevisionCombo {
-        public string Revision { get; set; }
-        public long ID { get; set; }
-    }
 
     public class SheetSortKeyCombo {
         public string ColumnName { get; set; }
