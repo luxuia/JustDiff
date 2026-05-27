@@ -10,6 +10,7 @@ using NetDiff;
 using System.IO;
 using System.Windows.Input;
 using System.Net;
+using System.Windows.Shapes;
 // NPOI 已替换为基于 MiniExcel 的自定义只读抽象（参见 ExcelModel.cs）。
 
 namespace ExcelMerge {
@@ -46,7 +47,11 @@ namespace ExcelMerge {
 
             ExcelGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, Menu_Save));
             ExcelGrid.InputBindings.Add(new InputBinding(ApplicationCommands.Copy, ApplicationCommands.Copy.InputGestures[0]));
+
+            DiffMarkerCanvas.SizeChanged += (s, e) => DrawMarkers();
         }
+
+        const double RowHeaderWidthPx = 50;
 
         public bool editing = false;
         private void ExcelGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
@@ -100,37 +105,6 @@ namespace ExcelMerge {
 
         }
 
-        private void Menu_BlameLine(object sender, RoutedEventArgs e)
-        {
-            var selectCells = ExcelGrid.SelectedCells;
-
-            var tag = Tag as string;
-            var wrap = MainWindow.instance.books[tag];
-
-            var lines = new List<int>();
-            foreach (var cell in selectCells)
-            {
-                var rowdata = cell.Item as ExcelData;
-                MainWindow.instance.FindCellEdit(wrap, rowdata.rowId, -1);
-                break;
-            }
-
-           
-        }
-
-        private void Menu_BlameCell(object sender, RoutedEventArgs e)
-        {
-            var selectCells = ExcelGrid.SelectedCells;
-            foreach (var cell in selectCells)
-            {
-                var rowdata = cell.Item as ExcelData;
-                var tag = Tag as string;
-                var wrap = MainWindow.instance.books[tag];
-
-                MainWindow.instance.FindCellEdit(wrap, rowdata.rowId, cell.Column.DisplayIndex);
-                break;
-            }
-        }
 
         DependencyProperty GetDependencyPropertyByName(Type dependencyObjectType, string dpName) {
             DependencyProperty dp = null;
@@ -215,8 +189,8 @@ namespace ExcelMerge {
 
                         var tc = new DataGridTemplateColumn();
                         tc.Header = strshow;
-                        tc.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
-                        tc.MinWidth = Math.Max(80, strshow.Length * 8 + 20);
+                        tc.Width = new DataGridLength(Math.Max(100, strshow.Length * 8 + 20));
+                        tc.CanUserResize = true;
                         tc.CellTemplateSelector = new CellTemplateSelector(encodestr, i, tag);
                         tc.CellEditingTemplateSelector = new CellTemplateSelector(encodestr, i, tag);
 
@@ -234,8 +208,8 @@ namespace ExcelMerge {
 
                         var tc = new DataGridTemplateColumn();
                         tc.Header = Util.NumberToExcelColumnId(i+1);
-                        tc.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
-                        tc.MinWidth = 80;
+                        tc.Width = new DataGridLength(100);
+                        tc.CanUserResize = true;
                         tc.CellTemplateSelector = new CellTemplateSelector(str, i, tag);
                         tc.CellEditingTemplateSelector = new CellTemplateSelector(str, i, tag);
 
@@ -304,18 +278,96 @@ namespace ExcelMerge {
                 }
             }
             ExcelGrid.ItemsSource = datas;
+            UpdateDiffMarkers(datas);
 
             CtxMenu.Items.Clear();
+        }
 
-            var item = new MenuItem();
-            item.Header = "blame 行";
-            item.Click += Menu_BlameLine;
-            CtxMenu.Items.Add(item);
+        List<int> _diffColumnPositions;
+        int _totalColumns;
 
-            item = new MenuItem();
-            item.Header = "blame 格子";
-            item.Click += Menu_BlameCell;
-            CtxMenu.Items.Add(item);
+        void UpdateDiffMarkers(List<ExcelData> datas) {
+            _diffColumnPositions = new List<int>();
+            _totalColumns = ExcelGrid.Columns.Count;
+
+            var tag = Tag as string;
+            if (!MainWindow.instance.books.ContainsKey(tag)) {
+                DrawMarkers();
+                return;
+            }
+            var wrap = MainWindow.instance.books[tag];
+            var sheetname = wrap.sheetname;
+
+            if (!MainWindow.instance.sheetsDiff.ContainsKey(sheetname)) {
+                DrawMarkers();
+                return;
+            }
+            var status = MainWindow.instance.sheetsDiff[sheetname];
+            if (status == null || _totalColumns <= 0) {
+                DrawMarkers();
+                return;
+            }
+
+            var changedColumns = new HashSet<int>();
+            for (int j = 0; j < status.diffSheet.Count; j++) {
+                var rowDiff = status.diffSheet[j];
+                if (!rowDiff.changed || rowDiff.diffcells == null) continue;
+
+                bool allInserted = true, allDeleted = true;
+                foreach (var cell in rowDiff.diffcells) {
+                    if (cell.Status != NetDiff.DiffStatus.Inserted) allInserted = false;
+                    if (cell.Status != NetDiff.DiffStatus.Deleted) allDeleted = false;
+                    if (!allInserted && !allDeleted) break;
+                }
+                if (allInserted || allDeleted) continue;
+
+                int cellCount = Math.Min(rowDiff.diffcells.Count, _totalColumns);
+                for (int col = 0; col < cellCount; col++) {
+                    if (rowDiff.diffcells[col].Status != NetDiff.DiffStatus.Equal)
+                        changedColumns.Add(col);
+                }
+            }
+            _diffColumnPositions = changedColumns.OrderBy(x => x).ToList();
+            DrawMarkers();
+        }
+
+        bool GetMarkerLayout(out double leftOffset, out double w) {
+            leftOffset = RowHeaderWidthPx;
+            double rightOffset = SystemParameters.VerticalScrollBarWidth;
+            w = DiffMarkerCanvas.ActualWidth - leftOffset - rightOffset;
+            return w > 0;
+        }
+
+        void DrawMarkers() {
+            DiffMarkerCanvas.Children.Clear();
+            if (_totalColumns <= 0 || _diffColumnPositions == null || _diffColumnPositions.Count == 0) return;
+            if (!GetMarkerLayout(out double leftOffset, out double w)) return;
+
+            double markerW = Math.Max(2, Math.Min(4, w / _totalColumns));
+            foreach (var col in _diffColumnPositions) {
+                double x = leftOffset + (double)col / _totalColumns * w;
+                var rect = new Rectangle {
+                    Width = markerW,
+                    Height = 8,
+                    Fill = Brushes.Red,
+                    Opacity = 0.7
+                };
+                Canvas.SetLeft(rect, x);
+                DiffMarkerCanvas.Children.Add(rect);
+            }
+        }
+
+        void DiffMarkerCanvas_Click(object sender, MouseButtonEventArgs e) {
+            if (_totalColumns <= 0 || ExcelGrid.Columns.Count == 0 || ExcelGrid.Items.Count == 0) return;
+            if (!GetMarkerLayout(out double leftOffset, out double w)) return;
+
+            double x = e.GetPosition(DiffMarkerCanvas).X - leftOffset;
+            double ratio = Math.Max(0, Math.Min(1, x / w));
+            int targetCol = (int)(ratio * _totalColumns);
+            targetCol = Math.Max(0, Math.Min(targetCol, ExcelGrid.Columns.Count - 1));
+
+            var anchor = ExcelGrid.SelectedItem ?? ExcelGrid.Items[0];
+            ExcelGrid.ScrollIntoView(anchor, ExcelGrid.Columns[targetCol]);
         }
 
         private void ExcelGrid_Drop(object sender, DragEventArgs e) {
