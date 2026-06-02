@@ -90,7 +90,7 @@ namespace ExcelMerge
             switch (raw)
             {
                 case string s:
-                    return new MiniExcelCell(CellType.String, s, 0d, false);
+                    return new MiniExcelCell(CellType.String, s.TrimEnd('\r', '\n'), 0d, false);
                 case bool b:
                     return new MiniExcelCell(CellType.Boolean, string.Empty, 0d, b);
                 case double d:
