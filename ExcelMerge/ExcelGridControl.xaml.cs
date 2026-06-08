@@ -189,7 +189,7 @@ namespace ExcelMerge {
 
                         var tc = new DataGridTemplateColumn();
                         tc.Header = strshow;
-                        tc.Width = new DataGridLength(Math.Max(100, strshow.Length * 8 + 20));
+                        tc.Width = new DataGridLength(MinColumnWidthPx);
                         tc.CanUserResize = true;
                         tc.CellTemplateSelector = new CellTemplateSelector(encodestr, i, tag);
                         tc.CellEditingTemplateSelector = new CellTemplateSelector(encodestr, i, tag);
@@ -208,7 +208,7 @@ namespace ExcelMerge {
 
                         var tc = new DataGridTemplateColumn();
                         tc.Header = Util.NumberToExcelColumnId(i+1);
-                        tc.Width = new DataGridLength(100);
+                        tc.Width = new DataGridLength(MinColumnWidthPx);
                         tc.CanUserResize = true;
                         tc.CellTemplateSelector = new CellTemplateSelector(str, i, tag);
                         tc.CellEditingTemplateSelector = new CellTemplateSelector(str, i, tag);
@@ -276,11 +276,59 @@ namespace ExcelMerge {
                         data_maps[data.rowId] = data;
                     }
                 }
+
+                AutoSizeColumnsFromDiff(status, columnCount, startcol, sheet);
             }
             ExcelGrid.ItemsSource = datas;
             UpdateDiffMarkers(datas);
 
             CtxMenu.Items.Clear();
+        }
+
+        const double MaxColumnWidthPx = 800;
+        const double CharWidthPx = 14;
+        const double MinColumnWidthPx = 80;
+
+        void AutoSizeColumnsFromDiff(SheetDiffStatus status, int columnCount, int startcol, ISheet sheet) {
+            if (status == null || columnCount <= 0) return;
+
+            var maxLen = new int[columnCount];
+
+            for (int j = 0; j < status.diffSheet.Count; j++) {
+                var rowDiff = status.diffSheet[j];
+                if (!rowDiff.changed || rowDiff.diffcells == null) continue;
+
+                bool allInserted = true, allDeleted = true;
+                foreach (var cell in rowDiff.diffcells) {
+                    if (cell.Status != NetDiff.DiffStatus.Inserted) allInserted = false;
+                    if (cell.Status != NetDiff.DiffStatus.Deleted) allDeleted = false;
+                    if (!allInserted && !allDeleted) break;
+                }
+                if (allInserted || allDeleted) continue;
+
+                int rowid = isSrc ? status.Diff2RowID1[j] : status.Diff2RowID2[j];
+                var row = sheet.GetRow(rowid);
+                if (row == null) continue;
+
+                int cellCount = Math.Min(rowDiff.diffcells.Count, columnCount);
+                for (int col = 0; col < cellCount; col++) {
+                    if (rowDiff.diffcells[col].Status == NetDiff.DiffStatus.Equal) continue;
+                    var cell = row.GetCell(col + startcol);
+                    var val = Util.GetCellValue(cell);
+                    if (val != null && val.Length > maxLen[col])
+                        maxLen[col] = val.Length;
+                }
+            }
+
+            var columns = ExcelGrid.Columns;
+            for (int col = 0; col < columnCount && col < columns.Count; col++) {
+                if (maxLen[col] <= 0) continue;
+                double needed = maxLen[col] * CharWidthPx;
+                needed = Math.Max(needed, MinColumnWidthPx);
+                needed = Math.Min(needed, MaxColumnWidthPx);
+                if (needed > columns[col].Width.Value)
+                    columns[col].Width = new DataGridLength(needed);
+            }
         }
 
         List<int> _diffColumnPositions;
