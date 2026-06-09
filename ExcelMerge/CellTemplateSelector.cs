@@ -65,6 +65,10 @@ namespace ExcelMerge {
                                         continue;
                                     FrameworkElementFactory textBlock = new FrameworkElementFactory(typeof(TextBlock));
                                     var text = tag == "dst" ? diff_cell.Obj2.ToString() : diff_cell.Obj1.ToString();
+                                    if (diff_cell.Status != DiffStatus.Equal && text.Contains(' ')) {
+                                        var trimmed = text.TrimEnd();
+                                        text = trimmed + new string('·', text.Length - trimmed.Length);
+                                    }
                                     textBlock.SetValue(TextBlock.TextProperty, text);
                                    
                                     stackPanel.AppendChild(textBlock);

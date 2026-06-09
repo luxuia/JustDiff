@@ -27,6 +27,7 @@ namespace ExcelMerge {
     public partial class MainWindow : Window {
 
         public static MainWindow instance;
+        private string _appInfo = "";
         //"dst","src"
         public Dictionary<string, WorkBookWrap> books = new Dictionary<string, WorkBookWrap>();
 
@@ -58,6 +59,11 @@ namespace ExcelMerge {
             }
             instance = this;
 
+            var exePath = Environment.ProcessPath ?? System.Reflection.Assembly.GetExecutingAssembly().Location;
+            var exeTime = !string.IsNullOrEmpty(exePath) && File.Exists(exePath)
+                ? File.GetLastWriteTime(exePath).ToString("yyyy-MM-dd HH:mm:ss") : "";
+            _appInfo = $"  [{exePath}]  {exeTime}";
+
             //dirWindow = new DirectoryDifferWindow();
             //dirWindow.Show();
             if (config.NoHead) {
@@ -82,7 +88,7 @@ namespace ExcelMerge {
             } finally {
                 var key = Registry.ClassesRoot.OpenSubKey(@"xlsmerge\shell\open\command");
                 if (key != null) {
-                    Title = "ExcelMerge " + "[已绑定]";
+                    Title = "ExcelMerge [已绑定]" + _appInfo;
                 }
             }
 
@@ -409,7 +415,7 @@ namespace ExcelMerge {
 
             DiffProgressBar.Value = 0;
             DiffProgressBar.Visibility = Visibility.Visible;
-            Title = "ExcelMerge - Loading...";
+            Title = "ExcelMerge - Loading..." + _appInfo;
 
             var oldSrc = books.ContainsKey("src") ? books["src"] : null;
             var oldDst = books.ContainsKey("dst") ? books["dst"] : null;
@@ -540,7 +546,7 @@ namespace ExcelMerge {
             bool anyChange = sheetsDiff.Values.Any(s => s != null && s.changed)
                 || diffSheetName.Any(d => d.Status != DiffStatus.Equal);
             NoChangesOverlay.Visibility = anyChange ? Visibility.Collapsed : Visibility.Visible;
-            Title = anyChange ? "JustDiff - Excel" : "JustDiff - Excel (No Changes)";
+            Title = (anyChange ? "JustDiff - Excel" : "JustDiff - Excel (No Changes)") + _appInfo;
         }
 
         public int DiffStartIdx(int emptyline) {
@@ -621,6 +627,9 @@ namespace ExcelMerge {
                 var startrow = wrap.SheetStartPoint[sheet.SheetName].Item1;
                 var startIdx = DiffStartIdx(startrow);
                 int ignoreEmptyLine = config.EmptyLine;
+                HashSet<int> ignoredCols = null;
+                if (wrap.SheetIgnoredColumns.ContainsKey(sheet.SheetName))
+                    ignoredCols = wrap.SheetIgnoredColumns[sheet.SheetName];
                 // 尝试找一个id不会重复的前几列的值作为key
                 for (int i = startIdx; ; i++)
                 {
@@ -633,10 +642,12 @@ namespace ExcelMerge {
                     var val = "";
                     for (var j = startCheckCell; j < startCheckCell + checkCellCount; ++j)
                     {
+                        if (ignoredCols != null && ignoredCols.Contains(j)) continue;
                         if (row.GetCell(j) == null || row.GetCell(j).CellType != CellType.Numeric)
                         {
                             allNum = false;
                         }
+                        if (val.Length > 0) val += "|";
                         val += Util.GetCellValue(row.GetCell(j));
                     }
                     var hash_val = val;
@@ -652,7 +663,6 @@ namespace ExcelMerge {
                         }
                         else
                         {
-                            // 已经找不到能作为key的了。把id和行号连一块
                             return SearchStatus.Fail;
                         }
                     }
@@ -712,7 +722,7 @@ namespace ExcelMerge {
             var option = new DiffOption<string2int>();
             option.EqualityComparer = new SheetIDComparer();
             var result = DiffUtil.Diff(list1, list2, option);
-            //var optimize = result.ToList();// 
+            //var optimize = result.ToList();//
             // id列不应该把delete/add优化成modify
            // var optimize = DiffUtil.OptimizeCaseDeletedFirst(result);
             return result.ToList();

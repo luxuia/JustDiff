@@ -157,6 +157,7 @@ namespace ExcelMerge {
         public Dictionary<string, Tuple<int, int>> SheetStartPoint = new Dictionary<string, Tuple<int, int>>();
 
         public Dictionary<string, List<string>> SheetHeaders = new Dictionary<string, List<string>>();
+        public Dictionary<string, HashSet<int>> SheetIgnoredColumns = new Dictionary<string, HashSet<int>>();
 
         public Dictionary<string, List<string>> SheetIDs = new Dictionary<string, List<string>>();
 
@@ -266,7 +267,22 @@ namespace ExcelMerge {
                         }
                     }
 
+                    var ignored = new HashSet<int>();
+                    int headEnd = startrow + cfg.HeadCount;
+                    for (int hr = startrow; hr < headEnd; hr++)
+                    {
+                        var hrow = sheet.GetRow(hr);
+                        if (hrow == null) continue;
+                        for (int i = startcol; i < startcol + header.Count; i++)
+                        {
+                            var val = Util.GetCellValue(hrow.GetCell(i));
+                            if (val.Contains("@ignored"))
+                                ignored.Add(i - startcol);
+                        }
+                    }
+
                     SheetHeaders[sheet.SheetName] = header;
+                    SheetIgnoredColumns[sheet.SheetName] = ignored;
                 }
             }
         }
