@@ -87,7 +87,7 @@
     <Compile Remove="NetDiff\Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\UnityYamlParser-main\VYaml\VYaml.Core\VYaml.Core.csproj" />
-    <ProjectReference Include="..\UnityYamlParser-main\VYaml\VYaml.Annotations\VYaml.Annotations.csproj" />
+    <ProjectReference Include="..\UnityYamlParser\VYaml\VYaml.Core\VYaml.Core.csproj" />
+    <ProjectReference Include="..\UnityYamlParser\VYaml\VYaml.Annotations\VYaml.Annotations.csproj" />
   </ItemGroup>
 </Project>

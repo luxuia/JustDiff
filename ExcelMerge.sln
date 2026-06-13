@@ -1,17 +1,17 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34227.203
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelMerge", "ExcelMerge\ExcelMerge.csproj", "{09AA7F86-7EF6-44D4-98D9-916D4E2FC258}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UnityYamlParser-main", "UnityYamlParser-main", "{7E08CEEB-0BF0-CED4-8364-A553E7503FDD}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UnityYamlParser", "UnityYamlParser", "{7E08CEEB-0BF0-CED4-8364-A553E7503FDD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "VYaml", "VYaml", "{705E447D-E10B-8339-E9FF-D835B5357DF5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VYaml.Core", "UnityYamlParser-main\VYaml\VYaml.Core\VYaml.Core.csproj", "{67AFF70D-A768-4131-9101-2E17F385CC1D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VYaml.Core", "UnityYamlParser\VYaml\VYaml.Core\VYaml.Core.csproj", "{67AFF70D-A768-4131-9101-2E17F385CC1D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VYaml.Annotations", "UnityYamlParser-main\VYaml\VYaml.Annotations\VYaml.Annotations.csproj", "{F25E9F63-4A19-4925-A731-97608D8D8EBA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VYaml.Annotations", "UnityYamlParser\VYaml\VYaml.Annotations\VYaml.Annotations.csproj", "{F25E9F63-4A19-4925-A731-97608D8D8EBA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
