@@ -12,7 +12,7 @@ build_script:
   - dotnet build ExcelMerge.sln -c Release --no-restore
 
 artifacts:
-- path: ExcelMerge\bin\release\
+- path: ExcelMerge\bin\Release\net6.0-windows\
   name: test
 deploy:
 - provider: GitHub
