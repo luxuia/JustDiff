@@ -10,8 +10,8 @@ configuration:
   - Release
 
 build_script:
-  - dotnet restore
-  - msbuild ExcelMerge.sln /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+  - dotnet restore ExcelMerge.sln
+  - dotnet build ExcelMerge.sln -c Release --no-restore
 
 artifacts:
 - path: ExcelMerge\bin\release\
