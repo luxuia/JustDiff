@@ -54,6 +54,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -69,6 +72,8 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
+        tag_name: build-${{ github.sha }}
+        name: Build ${{ github.sha }}
         files: ExcelMerge/bin/Release/net6.0-windows/**
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
