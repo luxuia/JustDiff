@@ -40,8 +40,7 @@ name: .NET Core Desktop
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [ "master" ]
 
 jobs:
 
@@ -70,7 +69,6 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
-        draft: true
         files: ExcelMerge/bin/Release/net6.0-windows/**
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
