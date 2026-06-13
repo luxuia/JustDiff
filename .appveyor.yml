@@ -9,12 +9,9 @@ image:
 configuration:
   - Release
 
-build:
-  project: ExcelMerge.sln
-  verbosity: minimal
-  
-before_build:
+build_script:
   - dotnet restore
+  - msbuild ExcelMerge.sln /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 artifacts:
 - path: ExcelMerge\bin\release\
