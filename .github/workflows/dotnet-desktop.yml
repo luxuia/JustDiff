@@ -69,12 +69,16 @@ jobs:
     - name: Build
       run: dotnet build $env:Solution_Name -c Release --no-restore
 
+    - name: Package
+      run: |
+        Compress-Archive -Path ExcelMerge/bin/Release/net6.0-windows/* -DestinationPath ExcelMerge.zip
+
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: build-${{ github.sha }}
         name: Build ${{ github.sha }}
-        files: ExcelMerge/bin/Release/net6.0-windows/**
+        files: ExcelMerge.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
